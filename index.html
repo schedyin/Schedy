@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Control Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        premium: {
+                            900: '#002726',
+                            800: '#032E2E',
+                            600: '#0A5C5C',
+                            50: '#F0F5F5'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"IBM Plex Sans"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'IBM Plex Sans', sans-serif; background-color: #FAFAFA; }
+        
+        /* Smooth Apple-esque hover transitions */
+        .group-hover-bg { transition: background-color 0.2s cubic-bezier(0.25, 1, 0.5, 1); }
+        .group-hover-transform { transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1); }
+        .row-container:hover .group-hover-transform { transform: translateX(4px); }
+    </style>
+</head>
+<body class="text-gray-800 pb-24">
+
+    <header class="bg-[#FAFAFA] p-5 flex items-center justify-between sticky top-0 z-20">
+        <div>
+            <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">Control Panel</h1>
+            <p class="text-xs font-medium text-gray-500 tracking-wide mt-0.5">Administrator</p>
+        </div>
+        <div class="bg-amber-100 border border-amber-200/60 px-3 py-1.5 rounded-xl flex items-center space-x-1.5 shadow-sm">
+            <i class="material-icons text-amber-600" style="font-size: 14px;">security</i>
+            <span class="text-[10px] font-extrabold text-amber-600 tracking-widest">ADMIN</span>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-5 space-y-8">
+
+        <div class="relative w-full rounded-[28px] bg-gradient-to-br from-premium-800 to-premium-900 border border-premium-900 overflow-hidden shadow-lg">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.15),transparent_60%)] pointer-events-none"></div>
+            
+            <div class="relative flex items-center p-6 sm:p-8">
+                <div class="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center backdrop-blur-sm shrink-0">
+                    <i class="material-icons text-white text-[28px]">admin_panel_settings</i>
+                </div>
+
+                <div class="ml-5">
+                    <p class="text-[10px] font-extrabold text-emerald-400/80 tracking-[0.18em] uppercase mb-1">Admin Access</p>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight mb-1">Full control panel</h2>
+                    <p class="text-xs sm:text-sm text-gray-300 leading-relaxed max-w-md">Manage members, schedules, and congregation operations.</p>
+                </div>
+            </div>
+        </div>
+
+        <section>
+            <div class="flex items-center space-x-3 mb-4">
+                <h3 class="font-bold text-base text-gray-900">Administrative Features</h3>
+                <div class="flex-1 h-px bg-gray-200"></div>
+            </div>
+
+            <div class="bg-white rounded-[20px] border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+                <a href="#" class="row-container flex items-center p-4 sm:px-5 sm:py-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                    <div class="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center shrink-0">
+                        <i class="material-icons text-red-500">person_add</i>
+                    </div>
+                    <div class="ml-4 flex-1 min-w-0">
+                        <div class="inline-block bg-red-50 px-2 py-0.5 rounded-md mb-1.5">
+                            <span class="text-[9px] font-bold text-red-600 tracking-widest uppercase">Users</span>
+                        </div>
+                        <h4 class="text-[15px] font-bold text-gray-900 truncate">Pending Users</h4>
+                        <p class="text-xs text-gray-500 truncate">Approve and manage new accounts</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 ml-3">
+                        <i class="material-icons text-gray-400 text-sm group-hover-transform">keyboard_arrow_right</i>
+                    </div>
+                </a>
+
+                <a href="#" class="row-container flex items-center p-4 sm:px-5 sm:py-4 hover:bg-gray-50 transition-colors">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center shrink-0">
+                        <i class="material-icons text-blue-600">people</i>
+                    </div>
+                    <div class="ml-4 flex-1 min-w-0">
+                        <div class="inline-block bg-blue-50 px-2 py-0.5 rounded-md mb-1.5">
+                            <span class="text-[9px] font-bold text-blue-600 tracking-widest uppercase">Members</span>
+                        </div>
+                        <h4 class="text-[15px] font-bold text-gray-900 truncate">Manage Members</h4>
+                        <p class="text-xs text-gray-500 truncate">Create, edit or delete member records</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 ml-3">
+                        <i class="material-icons text-gray-400 text-sm group-hover-transform">keyboard_arrow_right</i>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <section>
+            <div class="flex items-center space-x-3 mb-4">
+                <h3 class="font-bold text-base text-gray-900">Schedules & Planning</h3>
+                <div class="flex-1 h-px bg-gray-200"></div>
+            </div>
+
+            <div class="bg-white rounded-[20px] border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+                <a href="midweek.html" class="row-container flex items-center p-4 sm:px-5 sm:py-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center shrink-0">
+                        <i class="material-icons text-blue-600">date_range</i>
+                    </div>
+                    <div class="ml-4 flex-1 min-w-0">
+                        <div class="inline-block bg-blue-50 px-2 py-0.5 rounded-md mb-1.5">
+                            <span class="text-[9px] font-bold text-blue-600 tracking-widest uppercase">Midweek</span>
+                        </div>
+                        <h4 class="text-[15px] font-bold text-gray-900 truncate">Midweek Schedules</h4>
+                        <p class="text-xs text-gray-500 truncate">Create and publish midweek schedule sets</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 ml-3">
+                        <i class="material-icons text-gray-400 text-sm group-hover-transform">keyboard_arrow_right</i>
+                    </div>
+                </a>
+
+                <a href="weekend.html" class="row-container flex items-center p-4 sm:px-5 sm:py-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                    <div class="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center shrink-0">
+                        <i class="material-icons text-green-600">event</i>
+                    </div>
+                    <div class="ml-4 flex-1 min-w-0">
+                        <div class="inline-block bg-green-50 px-2 py-0.5 rounded-md mb-1.5">
+                            <span class="text-[9px] font-bold text-green-600 tracking-widest uppercase">Weekend</span>
+                        </div>
+                        <h4 class="text-[15px] font-bold text-gray-900 truncate">Weekend Schedule</h4>
+                        <p class="text-xs text-gray-500 truncate">Schedule Sunday talks and readings</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 ml-3">
+                        <i class="material-icons text-gray-400 text-sm group-hover-transform">keyboard_arrow_right</i>
+                    </div>
+                </a>
+
+                <a href="#" class="row-container flex items-center p-4 sm:px-5 sm:py-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0">
+                        <i class="material-icons text-emerald-600">assignment</i>
+                    </div>
+                    <div class="ml-4 flex-1 min-w-0">
+                        <div class="inline-block bg-emerald-50 px-2 py-0.5 rounded-md mb-1.5">
+                            <span class="text-[9px] font-bold text-emerald-600 tracking-widest uppercase">Field Svc</span>
+                        </div>
+                        <h4 class="text-[15px] font-bold text-gray-900 truncate">Field Service Plan</h4>
+                        <p class="text-xs text-gray-500 truncate">Schedule activities and groups</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 ml-3">
+                        <i class="material-icons text-gray-400 text-sm group-hover-transform">keyboard_arrow_right</i>
+                    </div>
+                </a>
+
+                <a href="covisit.html" class="row-container flex items-center p-4 sm:px-5 sm:py-4 hover:bg-gray-50 transition-colors">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center shrink-0">
+                        <i class="material-icons text-amber-500">supervisor_account</i>
+                    </div>
+                    <div class="ml-4 flex-1 min-w-0">
+                        <div class="inline-block bg-amber-50 px-2 py-0.5 rounded-md mb-1.5">
+                            <span class="text-[9px] font-bold text-amber-600 tracking-widest uppercase">CO Visit</span>
+                        </div>
+                        <h4 class="text-[15px] font-bold text-gray-900 truncate">CO Visit Schedules</h4>
+                        <p class="text-xs text-gray-500 truncate">Create and manage Circuit Overseer visits</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 ml-3">
+                        <i class="material-icons text-gray-400 text-sm group-hover-transform">keyboard_arrow_right</i>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <section>
+            <div class="flex items-center space-x-3 mb-4">
+                <h3 class="font-bold text-base text-gray-900">Congregation Operations</h3>
+                <div class="flex-1 h-px bg-gray-200"></div>
+            </div>
+
+            <div class="bg-white rounded-[20px] border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+                <a href="groups.html" class="row-container flex items-center p-4 sm:px-5 sm:py-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                    <div class="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center shrink-0">
+                        <i class="material-icons text-teal-600">group</i>
+                    </div>
+                    <div class="ml-4 flex-1 min-w-0">
+                        <div class="inline-block bg-teal-50 px-2 py-0.5 rounded-md mb-1.5">
+                            <span class="text-[9px] font-bold text-teal-600 tracking-widest uppercase">Groups</span>
+                        </div>
+                        <h4 class="text-[15px] font-bold text-gray-900 truncate">Field Service Groups</h4>
+                        <p class="text-xs text-gray-500 truncate">Create and assign group overseers</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 ml-3">
+                        <i class="material-icons text-gray-400 text-sm group-hover-transform">keyboard_arrow_right</i>
+                    </div>
+                </a>
+
+                <a href="departments.html" class="row-container flex items-center p-4 sm:px-5 sm:py-4 hover:bg-gray-50 transition-colors">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center shrink-0">
+                        <i class="material-icons text-amber-500">build</i>
+                    </div>
+                    <div class="ml-4 flex-1 min-w-0">
+                        <div class="inline-block bg-amber-50 px-2 py-0.5 rounded-md mb-1.5">
+                            <span class="text-[9px] font-bold text-amber-600 tracking-widest uppercase">Depts</span>
+                        </div>
+                        <h4 class="text-[15px] font-bold text-gray-900 truncate">Departments</h4>
+                        <p class="text-xs text-gray-500 truncate">Assign coordinators and assistants</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 ml-3">
+                        <i class="material-icons text-gray-400 text-sm group-hover-transform">keyboard_arrow_right</i>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+    </main>
+
+</body>
+</html>
