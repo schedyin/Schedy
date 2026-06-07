@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekend Schedules</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <header class="bg-green-600 text-white shadow-md p-4 flex items-center sticky top-0 z-10">
+        <button id="back-btn" class="hidden mr-4" onclick="goBack()"><i class="material-icons">arrow_back</i></button>
+        <h1 id="page-title" class="text-xl font-bold">Weekend Schedule Sets</h1>
+    </header>
+
+    <main class="max-w-3xl mx-auto p-4" id="main-content">
+        <div id="sets-view" class="space-y-4">
+            <div id="sets-list" class="space-y-4"></div>
+        </div>
+
+        <div id="details-view" class="hidden space-y-4">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 id="details-dates" class="text-lg font-bold">Dates: Pending</h2>
+                
+                <div class="mt-4 space-y-4">
+                    <input type="file" id="pdf-upload" accept="application/pdf" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/>
+                    <button id="publish-btn" onclick="publishSet()" class="w-full bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 disabled:opacity-50">Publish Set</button>
+                </div>
+            </div>
+
+            <h3 class="text-lg font-bold mt-6 border-b pb-2">Included Sundays</h3>
+            <div id="weeks-list" class="space-y-4"></div>
+
+            <button onclick="deleteSet()" class="w-full border-2 border-red-500 text-red-500 py-3 rounded font-bold hover:bg-red-50 mt-8 flex justify-center items-center">
+                <i class="material-icons mr-2">delete</i> Delete Entire Set
+            </button>
+        </div>
+    </main>
+
+    <button id="fab-btn" class="fixed bottom-6 right-6 bg-green-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-green-700 transition" onclick="handleFabClick()">
+        <i class="material-icons">add</i>
+    </button>
+
+    <div id="new-set-dialog" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-96 max-w-[90%]">
+            <h2 class="text-xl font-bold mb-4">Create New Weekend Set</h2>
+            <input type="text" id="new-set-title" placeholder="Set Name (e.g., May 2026)" class="w-full border p-2 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-green-500">
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeDialog()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
+                <button onclick="createSet()" id="create-btn" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Create Set</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDq-NkomNItBZorK7GQqvcFwSvFB5oHMaA",
+            authDomain: "schedy-congegation.firebaseapp.com",
+            projectId: "schedy-congegation",
+            storageBucket: "schedy-congegation.firebasestorage.app",
+            messagingSenderId: "642904120818",
+            appId: "1:642904120818:web:6a1cd7c2cd0dc460d41f6b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        let allSets = [];
+        let selectedSetId = null;
+        let currentSet = null;
+        let releasesMap = {};
+
+        // Listeners for weekend_schedules
+        onSnapshot(collection(db, "weekend_schedules"), (snapshot) => {
+            allSets = snapshot.docs.map(doc => ({
+                id: doc.id,
+                title: doc.data().title || "Untitled Set",
+                startDate: doc.data().startDate || "",
+                endDate: doc.data().endDate || "",
+                status: doc.data().status || "draft",
+                releaseId: doc.data().releaseId,
+                weeks: (doc.data().weeks || []).sort((a,b) => a.date.localeCompare(b.date))
+            })).sort((a, b) => b.startDate.localeCompare(a.startDate));
+            render();
+        });
+
+        // Listen for weekend releases
+        onSnapshot(doc(db, "metadata", "releases_index"), (snapshot) => {
+            if(snapshot.exists()){
+                const releases = snapshot.data().all_releases || [];
+                releasesMap = {};
+                releases.filter(r => r.type === "weekend").forEach(r => {
+                    releasesMap[r.id] = { id: r.id, pdfUrl: r.pdfUrl };
+                });
+            }
+        });
+
+        // UI Updates
+        window.render = function() {
+            if (selectedSetId) {
+                currentSet = allSets.find(s => s.id === selectedSetId);
+                document.getElementById('sets-view').classList.add('hidden');
+                document.getElementById('details-view').classList.remove('hidden');
+                document.getElementById('back-btn').classList.remove('hidden');
+                document.getElementById('page-title').innerText = currentSet ? currentSet.title : "Set Details";
+                
+                document.getElementById('details-dates').innerText = `Dates: ${currentSet.startDate || 'Pending'} to ${currentSet.endDate || 'Pending'}`;
+                
+                const isPublished = currentSet.status === "published";
+                document.getElementById('publish-btn').innerText = isPublished ? "Push Update to Users" : "Publish Set";
+
+                const weeksList = document.getElementById('weeks-list');
+                weeksList.innerHTML = currentSet.weeks.length === 0 ? "<p class='text-gray-500'>No Sundays added yet.</p>" : "";
+                
+                currentSet.weeks.forEach(week => {
+                    weeksList.innerHTML += `
+                        <div class="bg-white p-4 rounded-lg shadow flex justify-between items-center cursor-pointer hover:bg-gray-50" onclick="goToBuilder('${week.weekId}')">
+                            <div>
+                                <p class="text-xs text-gray-500">Sunday:</p>
+                                <p class="font-bold text-lg">${week.date || "No Date"}</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="bg-red-100 text-red-600 p-2 rounded-full" onclick="event.stopPropagation(); deleteWeek('${week.weekId}')"><i class="material-icons">delete</i></button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                document.getElementById('sets-view').classList.remove('hidden');
+                document.getElementById('details-view').classList.add('hidden');
+                document.getElementById('back-btn').classList.add('hidden');
+                document.getElementById('page-title').innerText = "Weekend Schedule Sets";
+                
+                const setsList = document.getElementById('sets-list');
+                setsList.innerHTML = "";
+                allSets.forEach(set => {
+                    const isPublished = set.status === "published";
+                    setsList.innerHTML += `
+                        <div class="p-4 rounded-lg shadow flex items-center cursor-pointer ${isPublished ? 'bg-green-50' : 'bg-white'}" onclick="selectSet('${set.id}')">
+                            <div class="h-12 w-12 rounded-full flex items-center justify-center ${isPublished ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-600'}">
+                                <i class="material-icons">date_range</i>
+                            </div>
+                            <div class="ml-4 flex-1">
+                                <h3 class="font-bold">${set.title}</h3>
+                                <p class="text-sm text-gray-500">${set.startDate ? `${set.startDate} to ${set.endDate}` : "No weeks added"}</p>
+                                <p class="text-xs font-bold mt-1">${set.weeks.length} Sundays</p>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        };
+
+        window.selectSet = (id) => { selectedSetId = id; render(); };
+        window.goBack = () => { selectedSetId = null; document.getElementById('pdf-upload').value = ""; render(); };
+        
+        window.handleFabClick = () => {
+            if (selectedSetId) goToBuilder("new");
+            else document.getElementById('new-set-dialog').classList.remove('hidden');
+        };
+        window.closeDialog = () => document.getElementById('new-set-dialog').classList.add('hidden');
+        
+        window.createSet = async () => {
+            const title = document.getElementById('new-set-title').value;
+            if(!title) return;
+            document.getElementById('create-btn').innerText = "Creating...";
+            
+            const newDocRef = doc(collection(db, "weekend_schedules"));
+            await setDoc(newDocRef, { title, status: "draft", startDate: "", endDate: "", weeks: [] });
+            
+            document.getElementById('new-set-title').value = "";
+            document.getElementById('create-btn').innerText = "Create Set";
+            closeDialog();
+            selectSet(newDocRef.id);
+        };
+
+        window.goToBuilder = (weekId) => {
+            window.location.href = `create-weekend.html?setId=${selectedSetId}&weekId=${weekId}`;
+        };
+
+        // Publishing Weekend Set
+        window.publishSet = async () => {
+            if(currentSet.weeks.length === 0) return alert("Cannot publish an empty set.");
+            document.getElementById('publish-btn').innerText = "Publishing...";
+            document.getElementById('publish-btn').disabled = true;
+
+            try {
+                const pdfInput = document.getElementById('pdf-upload').files[0];
+                let finalPdfUrl = currentSet.releaseId ? releasesMap[currentSet.releaseId]?.pdfUrl : null;
+
+                if (pdfInput) {
+                    const storageReference = ref(storage, `release_pdfs/${crypto.randomUUID()}.pdf`);
+                    await uploadBytes(storageReference, pdfInput);
+                    finalPdfUrl = await getDownloadURL(storageReference);
+                }
+
+                await runTransaction(db, async (transaction) => {
+                    const indexRef = doc(db, "metadata", "releases_index");
+                    const indexSnap = await transaction.get(indexRef);
+                    let allReleases = indexSnap.exists() ? indexSnap.data().all_releases || [] : [];
+
+                    if (currentSet.status !== "published" || !currentSet.releaseId) {
+                        const newReleaseId = crypto.randomUUID();
+                        const newRelease = {
+                            id: newReleaseId, title: currentSet.title, startDate: currentSet.startDate,
+                            endDate: currentSet.endDate, publishedAt: Date.now(), version: 1, type: "weekend", pdfUrl: finalPdfUrl
+                        };
+                        transaction.set(indexRef, { all_releases: [newRelease, ...allReleases] }, { merge: true });
+                        transaction.update(doc(db, "weekend_schedules", currentSet.id), { status: "published", releaseId: newReleaseId });
+                    } else {
+                        const updatedReleases = allReleases.map(r => {
+                            if (r.id === currentSet.releaseId) {
+                                return { ...r, version: (r.version || 1) + 1, publishedAt: Date.now(), pdfUrl: finalPdfUrl || r.pdfUrl };
+                            }
+                            return r;
+                        });
+                        transaction.update(indexRef, { all_releases: updatedReleases });
+                    }
+                });
+
+                // Push Notification (Weekend Specific)
+                const isUpdate = currentSet.status === "published";
+                const title = encodeURIComponent(isUpdate ? `Updated ${currentSet.title}` : "New Weekend Schedule");
+                const body = encodeURIComponent(isUpdate ? "Changes have been made to the weekend schedule." : `The schedule for ${currentSet.title} is now available.`);
+                fetch(`https://us-central1-schedy-congegation.cloudfunctions.net/sendScheduleNotification?key=schedy_admin_secure_9922&title=${title}&body=${body}`);
+
+                alert("Published Successfully!");
+                document.getElementById('pdf-upload').value = "";
+            } catch (e) {
+                alert("Error: " + e.message);
+            } finally {
+                document.getElementById('publish-btn').disabled = false;
+                render();
+            }
+        };
+
+        window.deleteWeek = async (weekId) => {
+            if(!confirm("Delete this week?")) return;
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const docRef = doc(db, "weekend_schedules", currentSet.id);
+                    const snap = await transaction.get(docRef);
+                    const weeks = snap.data().weeks || [];
+                    const updated = weeks.filter(w => w.weekId !== weekId);
+                    
+                    const dates = updated.map(w => w.date).sort();
+                    transaction.update(docRef, { weeks: updated, startDate: dates[0] || "", endDate: dates[dates.length-1] || "" });
+                });
+            } catch(e) { alert("Error deleting week."); }
+        };
+
+        window.deleteSet = async () => {
+            if(!confirm("Delete ENTIRE set? This cannot be undone.")) return;
+            try {
+                const releaseId = currentSet.releaseId;
+                await deleteDoc(doc(db, "weekend_schedules", currentSet.id));
+                
+                if (releaseId) {
+                    await runTransaction(db, async (transaction) => {
+                        const indexRef = doc(db, "metadata", "releases_index");
+                        const snap = await transaction.get(indexRef);
+                        if(snap.exists()){
+                            const filtered = (snap.data().all_releases || []).filter(r => r.id !== releaseId);
+                            transaction.update(indexRef, { all_releases: filtered });
+                        }
+                    });
+                }
+                goBack();
+            } catch(e) { alert("Error deleting set."); }
+        };
+    </script>
+</body>
+</html>
