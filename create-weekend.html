@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekend Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <header class="bg-white shadow-sm p-4 flex items-center sticky top-0 z-10">
+        <button onclick="window.location.href='weekend.html'" class="text-gray-600 mr-4"><i class="material-icons">close</i></button>
+        <h1 class="text-xl font-bold flex-1" id="page-title">Loading...</h1>
+        <button onclick="saveWeek()" id="save-btn" class="bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700">Save</button>
+    </header>
+
+    <main class="max-w-3xl mx-auto p-4 space-y-8 pb-24">
+        
+        <datalist id="members-list"></datalist>
+
+        <section class="bg-white p-6 rounded-lg shadow-sm space-y-4">
+            <h2 class="text-lg font-bold text-gray-800">Sunday Meeting</h2>
+            <input type="date" id="meetingDate" class="w-full border p-3 rounded" required>
+            <div>
+                <label class="text-sm text-gray-600">Chairman</label>
+                <input list="members-list" id="chairman" class="w-full border p-3 rounded" placeholder="Search member...">
+            </div>
+        </section>
+
+        <section class="bg-white p-6 rounded-lg shadow-sm space-y-4">
+            <h2 class="text-lg font-bold text-blue-600">Public Talk</h2>
+            <div>
+                <label class="text-sm text-gray-600">Speaker</label>
+                <input list="members-list" id="speakerName" class="w-full border p-3 rounded" placeholder="Search speaker...">
+            </div>
+            <input type="text" id="talkTitle" placeholder="Talk Title" class="w-full border p-3 rounded">
+            <input type="text" id="talkNumber" placeholder="Talk Number" class="w-full border p-3 rounded">
+            <input type="text" id="talkNumberLink" placeholder="Talk Link (URL)" class="w-full border p-3 rounded text-blue-500">
+        </section>
+
+        <section class="bg-white p-6 rounded-lg shadow-sm space-y-4">
+            <h2 class="text-lg font-bold text-purple-600">Watchtower Study</h2>
+            <div>
+                <label class="text-sm text-gray-600">Watchtower Reader</label>
+                <input list="members-list" id="watchtowerReader" class="w-full border p-3 rounded" placeholder="Search reader...">
+            </div>
+            <div class="grid grid-cols-2 gap-4 pt-2">
+                <div>
+                    <label class="text-sm text-gray-600">Roving Mic 1</label>
+                    <input list="members-list" id="roving1" class="w-full border p-3 rounded" placeholder="Search member...">
+                </div>
+                <div>
+                    <label class="text-sm text-gray-600">Roving Mic 2</label>
+                    <input list="members-list" id="roving2" class="w-full border p-3 rounded" placeholder="Search member...">
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDq-NkomNItBZorK7GQqvcFwSvFB5oHMaA",
+            authDomain: "schedy-congegation.firebaseapp.com",
+            projectId: "schedy-congegation",
+            storageBucket: "schedy-congegation.firebasestorage.app",
+            messagingSenderId: "642904120818",
+            appId: "1:642904120818:web:6a1cd7c2cd0dc460d41f6b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const setId = urlParams.get('setId');
+        const weekId = urlParams.get('weekId') || 'new';
+
+        let membersMap = {}; 
+
+        document.getElementById('page-title').innerText = weekId === 'new' ? 'New Sunday' : 'Edit Sunday';
+
+        // Load Members for Datalist
+        async function loadMembers() {
+            const snap = await getDocs(collection(db, "members"));
+            const datalist = document.getElementById('members-list');
+            snap.forEach(doc => {
+                membersMap[doc.data().name] = doc.id;
+                const option = document.createElement('option');
+                option.value = doc.data().name;
+                datalist.appendChild(option);
+            });
+        }
+
+        // Helpers
+        const setVal = (id, val) => { if(document.getElementById(id)) document.getElementById(id).value = val || ''; };
+        const getVal = (id) => document.getElementById(id).value;
+        const getParticipant = (name) => ({ id: membersMap[name] || "", name: name || "" });
+
+        async function loadData() {
+            await loadMembers();
+            if (weekId !== 'new') {
+                const docSnap = await getDoc(doc(db, "weekend_schedules", setId));
+                if (docSnap.exists()) {
+                    const weeks = docSnap.data().weeks || [];
+                    const week = weeks.find(w => w.weekId === weekId);
+                    if (week) {
+                        setVal('meetingDate', week.date); 
+                        setVal('chairman', week.chairman?.name);
+                        setVal('speakerName', week.speakerName?.name); 
+                        setVal('talkTitle', week.talkTitle); 
+                        setVal('talkNumber', week.talkNumber); 
+                        setVal('talkNumberLink', week.talkNumberLink);
+                        setVal('watchtowerReader', week.watchtowerReader?.name); 
+                        setVal('roving1', week.roving1?.name); 
+                        setVal('roving2', week.roving2?.name);
+                    }
+                }
+            }
+        }
+
+        window.saveWeek = async () => {
+            const date = getVal('meetingDate');
+            if(!date) return alert("Please enter a date.");
+            
+            document.getElementById('save-btn').innerText = "Saving...";
+            document.getElementById('save-btn').disabled = true;
+
+            const newWeekData = {
+                weekId: weekId === 'new' ? crypto.randomUUID() : weekId,
+                date: date,
+                chairman: getParticipant(getVal('chairman')),
+                speakerName: getParticipant(getVal('speakerName')),
+                talkTitle: getVal('talkTitle'),
+                talkNumber: getVal('talkNumber'),
+                talkNumberLink: getVal('talkNumberLink'),
+                watchtowerReader: getParticipant(getVal('watchtowerReader')),
+                roving1: getParticipant(getVal('roving1')),
+                roving2: getParticipant(getVal('roving2'))
+            };
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const docRef = doc(db, "weekend_schedules", setId);
+                    const snap = await transaction.get(docRef);
+                    const weeks = snap.data().weeks || [];
+                    
+                    let updatedWeeks;
+                    if(weekId === 'new') updatedWeeks = [...weeks, newWeekData];
+                    else updatedWeeks = weeks.map(w => w.weekId === newWeekData.weekId ? newWeekData : w);
+                    
+                    updatedWeeks.sort((a,b) => a.date.localeCompare(b.date));
+                    const startDate = updatedWeeks[0]?.date || "";
+                    const endDate = updatedWeeks[updatedWeeks.length-1]?.date || "";
+
+                    transaction.update(docRef, { weeks: updatedWeeks, startDate, endDate });
+                });
+                window.location.href = 'weekend.html';
+            } catch(e) {
+                alert("Error saving: " + e.message);
+                document.getElementById('save-btn').innerText = "Save";
+                document.getElementById('save-btn').disabled = false;
+            }
+        };
+
+        // Initialize Data
+        loadData();
+    </script>
+</body>
+</html>
