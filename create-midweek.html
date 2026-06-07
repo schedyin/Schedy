@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <header class="bg-white shadow-sm p-4 flex items-center sticky top-0 z-10">
+        <button onclick="window.location.href='midweek.html'" class="text-gray-600 mr-4"><i class="material-icons">close</i></button>
+        <h1 class="text-xl font-bold flex-1" id="page-title">Loading...</h1>
+        <button onclick="saveWeek()" id="save-btn" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">Save</button>
+    </header>
+
+    <main class="max-w-3xl mx-auto p-4 space-y-8 pb-24">
+        
+        <datalist id="members-list"></datalist>
+
+        <section class="bg-white p-6 rounded-lg shadow-sm space-y-4">
+            <h2 class="text-lg font-bold text-gray-800">Meeting Details</h2>
+            <input type="date" id="meetingDate" class="w-full border p-3 rounded" required>
+            <input type="text" id="scripturesOfTheWeek" placeholder="Scriptures of the week" class="w-full border p-3 rounded">
+            <div>
+                <label class="text-sm text-gray-600">Chairman</label>
+                <input list="members-list" id="chairman" class="w-full border p-3 rounded" placeholder="Search member...">
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4 pt-4 border-t">
+                <input type="text" id="openingSong" placeholder="Opening Song #" class="border p-3 rounded">
+                <input type="text" id="openingSongTitle" placeholder="Song Title" class="col-span-2 border p-3 rounded">
+                <input type="text" id="openingSongScripture" placeholder="Song Scripture" class="col-span-3 border p-3 rounded">
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">Opening Prayer</label>
+                <input list="members-list" id="openingPrayer" class="w-full border p-3 rounded" placeholder="Search member...">
+            </div>
+        </section>
+
+        <section class="bg-white p-6 rounded-lg shadow-sm space-y-4">
+            <h2 class="text-lg font-bold text-orange-600">TREASURES FROM GOD'S WORD</h2>
+            <input type="text" id="talkTitle" placeholder="10 min Talk Title" class="w-full border p-3 rounded">
+            <input list="members-list" id="talkSpeaker" placeholder="Speaker" class="w-full border p-3 rounded">
+            
+            <div class="grid grid-cols-2 gap-4">
+                <input list="members-list" id="gemsConductor" placeholder="Gems Conductor" class="border p-3 rounded">
+                <input list="members-list" id="gemsRoving" placeholder="Gems Roving" class="border p-3 rounded">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 pt-4 border-t">
+                <input type="text" id="bibleReadingScriptures" placeholder="Bible Reading (e.g. Matt 1-3)" class="border p-3 rounded">
+                <input type="text" id="bibleReadingScripturesLink" placeholder="Reading Link" class="border p-3 rounded">
+                <input list="members-list" id="bibleReader" placeholder="Reader" class="col-span-2 border p-3 rounded">
+                <input type="text" id="bibleReadingCounselPoint" placeholder="Counsel Point" class="border p-3 rounded">
+                <input type="text" id="bibleReadingCounselPointLink" placeholder="Counsel Link" class="border p-3 rounded">
+            </div>
+        </section>
+
+        <section class="bg-white p-6 rounded-lg shadow-sm space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold text-yellow-600">FIELD MINISTRY</h2>
+                <button onclick="addMinistryPart()" class="bg-gray-200 p-2 rounded-full hover:bg-gray-300"><i class="material-icons">add</i></button>
+            </div>
+            <div id="ministry-container" class="space-y-4"></div>
+        </section>
+
+        <section class="bg-white p-6 rounded-lg shadow-sm space-y-4">
+            <h2 class="text-lg font-bold text-red-600">LIVING AS CHRISTIANS</h2>
+            
+            <div class="grid grid-cols-3 gap-4 pb-4 border-b">
+                <input type="text" id="middleSong" placeholder="Middle Song #" class="border p-3 rounded">
+                <input type="text" id="middleSongTitle" placeholder="Song Title" class="col-span-2 border p-3 rounded">
+                <input type="text" id="middleSongScripture" placeholder="Song Scripture" class="col-span-3 border p-3 rounded">
+            </div>
+
+            <div class="flex justify-between items-center pt-4">
+                <h3 class="font-bold">Parts</h3>
+                <button onclick="addChristianPart()" class="bg-gray-200 p-2 rounded-full hover:bg-gray-300"><i class="material-icons">add</i></button>
+            </div>
+            <div id="christian-container" class="space-y-4 pb-4 border-b"></div>
+
+            <h3 class="font-bold pt-4">Congregation Bible Study (30 min.)</h3>
+            <input list="members-list" id="cbsConductor" placeholder="CBS Conductor" class="w-full border p-3 rounded">
+            <div class="grid grid-cols-2 gap-4">
+                <input list="members-list" id="cbsReader" placeholder="CBS Reader" class="border p-3 rounded">
+                <input list="members-list" id="cbsRoving" placeholder="CBS Roving" class="border p-3 rounded">
+            </div>
+
+            <div class="grid grid-cols-3 gap-4 pt-4 border-t">
+                <input type="text" id="closingSong" placeholder="Closing Song #" class="border p-3 rounded">
+                <input type="text" id="closingSongTitle" placeholder="Song Title" class="col-span-2 border p-3 rounded">
+                <input type="text" id="closingSongScripture" placeholder="Song Scripture" class="col-span-3 border p-3 rounded">
+            </div>
+            <input list="members-list" id="closingPrayer" placeholder="Closing Prayer" class="w-full border p-3 rounded mt-4">
+        </section>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDq-NkomNItBZorK7GQqvcFwSvFB5oHMaA",
+            authDomain: "schedy-congegation.firebaseapp.com",
+            projectId: "schedy-congegation",
+            storageBucket: "schedy-congegation.firebasestorage.app",
+            messagingSenderId: "642904120818",
+            appId: "1:642904120818:web:6a1cd7c2cd0dc460d41f6b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const setId = urlParams.get('setId');
+        const weekId = urlParams.get('weekId') || 'new';
+
+        let membersMap = {}; 
+        let ministryParts = [{ title: '', time: '', description: '', descriptionLink: '', counselPoint: '', counselPointLink: '', participant1: '', participant2: '' }];
+        let christianParts = [{ title: '', time: '', conductor: '', roving: '' }];
+
+        document.getElementById('page-title').innerText = weekId === 'new' ? 'New Week' : 'Edit Week';
+
+        // Load Members for Datalist
+        async function loadMembers() {
+            const snap = await getDocs(collection(db, "members"));
+            const datalist = document.getElementById('members-list');
+            snap.forEach(doc => {
+                membersMap[doc.data().name] = doc.id; // Map name to ID
+                const option = document.createElement('option');
+                option.value = doc.data().name;
+                datalist.appendChild(option);
+            });
+        }
+
+        // Render Dynamic Arrays
+        window.renderArrays = () => {
+            const minCont = document.getElementById('ministry-container');
+            minCont.innerHTML = ministryParts.map((p, i) => `
+                <div class="bg-gray-50 p-4 rounded border">
+                    <div class="flex justify-between mb-2">
+                        <span class="font-bold text-sm">Part ${i+1}</span>
+                        ${ministryParts.length > 1 ? `<button onclick="removeMinistry(${i})" class="text-red-500"><i class="material-icons">delete</i></button>` : ''}
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 mb-2">
+                        <input type="text" value="${p.title}" oninput="updateMin(${i}, 'title', this.value)" placeholder="Title" class="col-span-2 border p-2 rounded text-sm">
+                        <input type="text" value="${p.time}" oninput="updateMin(${i}, 'time', this.value)" placeholder="Time" class="border p-2 rounded text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <input type="text" value="${p.description}" oninput="updateMin(${i}, 'description', this.value)" placeholder="Description" class="border p-2 rounded text-sm">
+                        <input type="text" value="${p.descriptionLink}" oninput="updateMin(${i}, 'descriptionLink', this.value)" placeholder="Desc Link" class="border p-2 rounded text-sm">
+                        <input type="text" value="${p.counselPoint}" oninput="updateMin(${i}, 'counselPoint', this.value)" placeholder="Counsel Pt" class="border p-2 rounded text-sm">
+                        <input type="text" value="${p.counselPointLink}" oninput="updateMin(${i}, 'counselPointLink', this.value)" placeholder="Counsel Link" class="border p-2 rounded text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input list="members-list" value="${p.participant1}" oninput="updateMin(${i}, 'participant1', this.value)" placeholder="Person 1" class="border p-2 rounded text-sm">
+                        <input list="members-list" value="${p.participant2}" oninput="updateMin(${i}, 'participant2', this.value)" placeholder="Person 2" class="border p-2 rounded text-sm">
+                    </div>
+                </div>
+            `).join('');
+
+            const chrisCont = document.getElementById('christian-container');
+            chrisCont.innerHTML = christianParts.map((p, i) => `
+                <div class="bg-gray-50 p-4 rounded border">
+                    <div class="flex justify-between mb-2">
+                        <span class="font-bold text-sm">Part ${i+1}</span>
+                        ${christianParts.length > 1 ? `<button onclick="removeChristian(${i})" class="text-red-500"><i class="material-icons">delete</i></button>` : ''}
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 mb-2">
+                        <input type="text" value="${p.title}" oninput="updateChris(${i}, 'title', this.value)" placeholder="Title" class="col-span-2 border p-2 rounded text-sm">
+                        <input type="text" value="${p.time}" oninput="updateChris(${i}, 'time', this.value)" placeholder="Time" class="border p-2 rounded text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input list="members-list" value="${p.conductor}" oninput="updateChris(${i}, 'conductor', this.value)" placeholder="Conductor" class="border p-2 rounded text-sm">
+                        <input list="members-list" value="${p.roving}" oninput="updateChris(${i}, 'roving', this.value)" placeholder="Roving" class="border p-2 rounded text-sm">
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        // Array Actions
+        window.addMinistryPart = () => { ministryParts.push({ title:'', time:'', description:'', descriptionLink:'', counselPoint:'', counselPointLink:'', participant1:'', participant2:'' }); renderArrays(); };
+        window.removeMinistry = (i) => { ministryParts.splice(i, 1); renderArrays(); };
+        window.updateMin = (i, field, val) => { ministryParts[i][field] = val; };
+
+        window.addChristianPart = () => { christianParts.push({ title:'', time:'', conductor:'', roving:'' }); renderArrays(); };
+        window.removeChristian = (i) => { christianParts.splice(i, 1); renderArrays(); };
+        window.updateChris = (i, field, val) => { christianParts[i][field] = val; };
+
+        // Bind data to inputs helper
+        const setVal = (id, val) => { if(document.getElementById(id)) document.getElementById(id).value = val || ''; };
+        const getVal = (id) => document.getElementById(id).value;
+        const getParticipant = (name) => ({ id: membersMap[name] || "", name: name || "" });
+
+        async function loadData() {
+            await loadMembers();
+            if (weekId !== 'new') {
+                const docSnap = await getDoc(doc(db, "midweek_schedules", setId));
+                if (docSnap.exists()) {
+                    const weeks = docSnap.data().weeks || [];
+                    const week = weeks.find(w => w.weekId === weekId);
+                    if (week) {
+                        setVal('meetingDate', week.date); setVal('scripturesOfTheWeek', week.scriptures); setVal('chairman', week.chairman?.name);
+                        setVal('openingSong', week.openingSong); setVal('openingSongTitle', week.openingSongTitle); setVal('openingSongScripture', week.openingSongScripture);
+                        setVal('openingPrayer', week.openingPrayer?.name);
+                        setVal('talkTitle', week.talkTitle); setVal('talkSpeaker', week.talkSpeaker?.name);
+                        setVal('gemsConductor', week.gemsConductor?.name); setVal('gemsRoving', week.gemsRoving?.name);
+                        setVal('bibleReadingScriptures', week.bibleReadingScriptures); setVal('bibleReadingScripturesLink', week.bibleReadingScripturesLink);
+                        setVal('bibleReader', week.bibleReader?.name); setVal('bibleReadingCounselPoint', week.bibleReadingCounselPoint); setVal('bibleReadingCounselPointLink', week.bibleReadingCounselPointLink);
+                        setVal('middleSong', week.middleSong); setVal('middleSongTitle', week.middleSongTitle); setVal('middleSongScripture', week.middleSongScripture);
+                        setVal('cbsConductor', week.cbsConductor?.name); setVal('cbsReader', week.cbsReader?.name); setVal('cbsRoving', week.cbsRoving?.name);
+                        setVal('closingSong', week.closingSong); setVal('closingSongTitle', week.closingSongTitle); setVal('closingSongScripture', week.closingSongScripture);
+                        setVal('closingPrayer', week.closingPrayer?.name);
+
+                        if(week.ministryParts) ministryParts = week.ministryParts.map(p => ({...p, participant1: p.participant1?.name||'', participant2: p.participant2?.name||''}));
+                        if(week.christianParts) christianParts = week.christianParts.map(p => ({...p, conductor: p.conductor?.name||'', roving: p.roving?.name||''}));
+                    }
+                }
+            }
+            renderArrays();
+        }
+
+        window.saveWeek = async () => {
+            const date = getVal('meetingDate');
+            if(!date) return alert("Please enter a meeting date.");
+            
+            document.getElementById('save-btn').innerText = "Saving...";
+            document.getElementById('save-btn').disabled = true;
+
+            const newWeekData = {
+                weekId: weekId === 'new' ? crypto.randomUUID() : weekId,
+                date: date, scriptures: getVal('scripturesOfTheWeek'), chairman: getParticipant(getVal('chairman')),
+                openingSong: getVal('openingSong'), openingSongTitle: getVal('openingSongTitle'), openingSongScripture: getVal('openingSongScripture'),
+                openingPrayer: getParticipant(getVal('openingPrayer')),
+                talkTitle: getVal('talkTitle'), talkSpeaker: getParticipant(getVal('talkSpeaker')),
+                gemsConductor: getParticipant(getVal('gemsConductor')), gemsRoving: getParticipant(getVal('gemsRoving')),
+                bibleReadingScriptures: getVal('bibleReadingScriptures'), bibleReadingScripturesLink: getVal('bibleReadingScripturesLink'),
+                bibleReader: getParticipant(getVal('bibleReader')), bibleReadingCounselPoint: getVal('bibleReadingCounselPoint'), bibleReadingCounselPointLink: getVal('bibleReadingCounselPointLink'),
+                ministryParts: ministryParts.map(p => ({
+                    title: p.title, time: p.time, description: p.description, descriptionLink: p.descriptionLink, counselPoint: p.counselPoint, counselPointLink: p.counselPointLink,
+                    participant1: getParticipant(p.participant1), participant2: getParticipant(p.participant2)
+                })),
+                middleSong: getVal('middleSong'), middleSongTitle: getVal('middleSongTitle'), middleSongScripture: getVal('middleSongScripture'),
+                christianParts: christianParts.map(p => ({
+                    title: p.title, time: p.time, conductor: getParticipant(p.conductor), roving: getParticipant(p.roving)
+                })),
+                cbsConductor: getParticipant(getVal('cbsConductor')), cbsReader: getParticipant(getVal('cbsReader')), cbsRoving: getParticipant(getVal('cbsRoving')),
+                closingSong: getVal('closingSong'), closingSongTitle: getVal('closingSongTitle'), closingSongScripture: getVal('closingSongScripture'), closingPrayer: getParticipant(getVal('closingPrayer'))
+            };
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const docRef = doc(db, "midweek_schedules", setId);
+                    const snap = await transaction.get(docRef);
+                    const weeks = snap.data().weeks || [];
+                    
+                    let updatedWeeks;
+                    if(weekId === 'new') updatedWeeks = [...weeks, newWeekData];
+                    else updatedWeeks = weeks.map(w => w.weekId === newWeekData.weekId ? newWeekData : w);
+                    
+                    updatedWeeks.sort((a,b) => a.date.localeCompare(b.date));
+                    const startDate = updatedWeeks[0]?.date || "";
+                    const endDate = updatedWeeks[updatedWeeks.length-1]?.date || "";
+
+                    transaction.update(docRef, { weeks: updatedWeeks, startDate, endDate });
+                });
+                window.location.href = 'midweek.html';
+            } catch(e) {
+                alert("Error saving: " + e.message);
+                document.getElementById('save-btn').innerText = "Save";
+                document.getElementById('save-btn').disabled = false;
+            }
+        };
+
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>
