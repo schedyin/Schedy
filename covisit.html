@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CO Visit Schedules</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <header class="bg-purple-700 text-white shadow-md p-4 flex items-center sticky top-0 z-10">
+        <button onclick="window.history.back()" class="mr-4"><i class="material-icons">arrow_back</i></button>
+        <h1 class="text-xl font-bold">CO Visit Schedules</h1>
+    </header>
+
+    <main class="max-w-3xl mx-auto p-4 space-y-4" id="main-content">
+        <div id="empty-state" class="hidden text-center text-gray-500 mt-12">
+            <p class="text-lg">No CO Visit schedules yet.</p>
+            <p>Tap + to create one.</p>
+        </div>
+        <div id="visits-list" class="space-y-3"></div>
+    </main>
+
+    <button class="fixed bottom-6 right-6 bg-purple-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-purple-800 transition" onclick="document.getElementById('new-visit-dialog').classList.remove('hidden')">
+        <i class="material-icons">add</i>
+    </button>
+
+    <div id="new-visit-dialog" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-96 max-w-[90%]">
+            <h2 class="text-xl font-bold mb-4">New CO Visit</h2>
+            <input type="text" id="new-co-name" placeholder="Circuit Overseer Name" class="w-full border p-2 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <div class="flex justify-end space-x-2">
+                <button onclick="document.getElementById('new-visit-dialog').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
+                <button onclick="createVisit()" id="create-btn" class="px-4 py-2 bg-purple-700 text-white rounded hover:bg-purple-800">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDq-NkomNItBZorK7GQqvcFwSvFB5oHMaA",
+            authDomain: "schedy-congegation.firebaseapp.com",
+            projectId: "schedy-congegation",
+            storageBucket: "schedy-congegation.firebasestorage.app",
+            messagingSenderId: "642904120818",
+            appId: "1:642904120818:web:6a1cd7c2cd0dc460d41f6b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        onSnapshot(collection(db, "covisit_schedules"), (snapshot) => {
+            const listEl = document.getElementById('visits-list');
+            const emptyEl = document.getElementById('empty-state');
+            listEl.innerHTML = "";
+            
+            if(snapshot.empty) { emptyEl.classList.remove('hidden'); return; }
+            emptyEl.classList.add('hidden');
+
+            let visits = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            visits.sort((a, b) => (b.weekStartDate || "").localeCompare(a.weekStartDate || ""));
+
+            visits.forEach(v => {
+                const isPublished = v.status === "published";
+                listEl.innerHTML += `
+                    <div class="p-4 rounded-lg shadow flex items-center cursor-pointer ${isPublished ? 'bg-purple-50' : 'bg-white'}" onclick="window.location.href='create-covisit.html?id=${v.id}'">
+                        <div class="h-12 w-12 rounded-full flex items-center justify-center ${isPublished ? 'bg-purple-100 text-purple-700' : 'bg-gray-200 text-gray-600'}">
+                            <i class="material-icons">date_range</i>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <h3 class="font-bold text-lg">${v.coName || "Unnamed CO"}</h3>
+                            <p class="text-sm text-gray-500">${v.weekStartDate ? `${v.weekStartDate} → ${v.weekEndDate}` : "Dates not set"}</p>
+                            <p class="text-xs font-bold mt-1 ${isPublished ? 'text-purple-700' : 'text-gray-500'}">${isPublished ? 'Published' : 'Draft'}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        });
+
+        window.createVisit = async () => {
+            const name = document.getElementById('new-co-name').value;
+            if(!name) return;
+            document.getElementById('create-btn').innerText = "Creating...";
+            
+            const newDocRef = doc(collection(db, "covisit_schedules"));
+            await setDoc(newDocRef, {
+                coName: name, weekStartDate: "", weekEndDate: "", status: "draft", releaseId: null,
+                midweek: {}, weekend: {}, fieldService: [], coActivities: {}
+            });
+            window.location.href = `create-covisit.html?id=${newDocRef.id}`;
+        };
+    </script>
+</body>
+</html>
