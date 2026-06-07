@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Field Service Groups</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        premium: {
+                            900: '#002726',
+                            800: '#032E2E',
+                            600: '#0A5C5C',
+                            50: '#F0F5F5'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"IBM Plex Sans"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'IBM Plex Sans', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        
+        /* Smooth Apple-esque easing */
+        .modal-enter { animation: fade-in 0.2s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        @keyframes fade-in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-800 pb-24">
+
+    <header class="bg-premium-900 text-white shadow-md p-4 flex items-center sticky top-0 z-20">
+        <button id="back-btn" onclick="navigateBack()" class="mr-4 hidden"><i class="material-icons">arrow_back</i></button>
+        <h1 class="text-xl font-semibold flex-1" id="header-title">Field Service Groups</h1>
+        <button id="publish-btn" onclick="publishGroups()" class="bg-premium-600 text-white px-5 py-2 rounded-2xl font-semibold hover:bg-premium-800 transition-colors shadow-sm disabled:opacity-50">
+            Publish
+        </button>
+    </header>
+
+    <main class="max-w-3xl mx-auto p-4" id="main-content">
+        <div id="loading-state" class="flex justify-center mt-12">
+            <div class="animate-spin rounded-2xl h-8 w-8 border-b-2 border-premium-800"></div>
+        </div>
+
+        <div id="view-list" class="hidden space-y-4">
+            <div id="groups-container" class="space-y-3"></div>
+            
+            <h3 class="font-bold text-premium-800 mt-8 mb-2 border-b pb-2">Others</h3>
+            <div id="others-container" class="space-y-3"></div>
+        </div>
+
+        <div id="view-detail" class="hidden space-y-4">
+            <div id="overseer-cards" class="space-y-4 mb-6"></div>
+            <h3 class="font-bold text-gray-700 uppercase tracking-wider text-sm border-b pb-2">Members</h3>
+            <div id="members-container" class="space-y-2"></div>
+        </div>
+    </main>
+
+    <button id="fab-create" onclick="openDialog('dialog-create')" class="fixed bottom-6 right-6 bg-premium-800 text-white w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center hover:bg-premium-900 transition-colors hidden">
+        <i class="material-icons">add</i>
+    </button>
+    <button id="fab-add-member" onclick="openAddMembersDialog()" class="fixed bottom-6 right-6 bg-premium-600 text-white w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center hover:bg-premium-800 transition-colors hidden">
+        <i class="material-icons">person_add</i>
+    </button>
+
+    <div id="dialog-create" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-6 w-[400px] max-w-[90%] shadow-xl modal-enter">
+            <h2 class="text-xl font-bold mb-4 text-premium-900">Create New Group</h2>
+            <input type="text" id="new-group-name" placeholder="Group Name" class="w-full border border-gray-300 p-3 rounded-2xl mb-6 focus:outline-none focus:ring-2 focus:ring-premium-600 transition-shadow">
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeDialog('dialog-create')" class="px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium transition-colors">Cancel</button>
+                <button onclick="createGroup()" class="px-5 py-2 bg-premium-800 text-white rounded-2xl hover:bg-premium-900 font-medium transition-colors">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dialog-add-members" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-6 w-[400px] max-w-[90%] shadow-xl modal-enter flex flex-col max-h-[80vh]">
+            <h2 class="text-xl font-bold mb-4 text-premium-900">Add Members</h2>
+            <div id="unassigned-list" class="overflow-y-auto flex-1 mb-4 space-y-2 pr-2"></div>
+            <div class="flex justify-end space-x-3 border-t pt-4">
+                <button onclick="closeDialog('dialog-add-members')" class="px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium transition-colors">Cancel</button>
+                <button onclick="confirmAddMembers()" class="px-5 py-2 bg-premium-800 text-white rounded-2xl hover:bg-premium-900 font-medium transition-colors">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dialog-member-action" class="fixed inset-0 bg-black/40 hidden items-end sm:items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-t-2xl sm:rounded-2xl p-6 w-full sm:w-[400px] shadow-xl modal-enter">
+            <h2 id="action-member-name" class="text-lg font-bold mb-4 text-premium-900 border-b pb-2">Member Name</h2>
+            <button onclick="openMoveGroup()" class="w-full text-left py-3 px-4 hover:bg-premium-50 rounded-2xl flex items-center transition-colors">
+                <i class="material-icons text-gray-500 mr-3">arrow_forward</i> Move to Another Group
+            </button>
+            <button onclick="removeFromGroup()" class="w-full text-left py-3 px-4 hover:bg-red-50 text-red-600 rounded-2xl flex items-center mt-2 transition-colors">
+                <i class="material-icons mr-3">delete</i> Remove from Group
+            </button>
+            <button onclick="closeDialog('dialog-member-action')" class="w-full py-3 mt-4 bg-gray-100 rounded-2xl font-medium hover:bg-gray-200 transition-colors">Cancel</button>
+        </div>
+    </div>
+
+    <div id="dialog-move-group" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-6 w-[400px] max-w-[90%] shadow-xl modal-enter max-h-[80vh] flex flex-col">
+            <h2 class="text-xl font-bold mb-4 text-premium-900">Move to Group</h2>
+            <div id="move-group-list" class="overflow-y-auto flex-1 mb-4 space-y-2 pr-2"></div>
+            <div class="flex justify-end space-x-3 border-t pt-4">
+                <button onclick="closeDialog('dialog-move-group')" class="px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium transition-colors">Cancel</button>
+                <button onclick="confirmMoveGroup()" class="px-5 py-2 bg-premium-800 text-white rounded-2xl hover:bg-premium-900 font-medium transition-colors">Move</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dialog-assign-overseer" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-6 w-[400px] max-w-[90%] shadow-xl modal-enter flex flex-col max-h-[80vh]">
+            <h2 id="assign-title" class="text-xl font-bold mb-4 text-premium-900">Assign</h2>
+            
+            <div id="assign-step-1" class="space-y-3">
+                <button onclick="showOverseerList('group')" class="w-full text-left py-3 px-4 border border-gray-200 rounded-2xl hover:bg-premium-50 transition-colors font-medium">Select from group members</button>
+                <button onclick="showOverseerList('all')" class="w-full text-left py-3 px-4 border border-gray-200 rounded-2xl hover:bg-premium-50 transition-colors font-medium">Select from all males</button>
+            </div>
+
+            <div id="assign-step-2" class="hidden flex-1 flex flex-col min-h-0">
+                <div id="overseer-candidate-list" class="overflow-y-auto flex-1 mb-4 space-y-2 pr-2"></div>
+                <div class="flex justify-end space-x-3 border-t pt-4">
+                    <button onclick="document.getElementById('assign-step-2').classList.add('hidden'); document.getElementById('assign-step-1').classList.remove('hidden');" class="px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium transition-colors">Back</button>
+                    <button onclick="confirmAssignOverseer()" class="px-5 py-2 bg-premium-800 text-white rounded-2xl hover:bg-premium-900 font-medium transition-colors">Assign</button>
+                </div>
+            </div>
+            
+            <div id="assign-cancel-btn" class="flex justify-end mt-4">
+                <button onclick="closeDialog('dialog-assign-overseer')" class="px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium transition-colors w-full">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteField, runTransaction, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDq-NkomNItBZorK7GQqvcFwSvFB5oHMaA",
+            authDomain: "schedy-congegation.firebaseapp.com",
+            projectId: "schedy-congegation",
+            storageBucket: "schedy-congegation.firebasestorage.app",
+            messagingSenderId: "642904120818",
+            appId: "1:642904120818:web:6a1cd7c2cd0dc460d41f6b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // State variables
+        let allMembers = [];
+        let groupDataList = [];
+        let releaseId = null;
+        let isPublished = false;
+
+        let currentView = "LIST";
+        let selectedGroupName = "";
+        let selectedGroupId = "";
+        
+        let selectedMemberIds = new Set();
+        let actionMember = null;
+        let moveTargetGroup = "";
+        
+        let assignMode = ""; // "overseer" or "assistant"
+        let selectedOverseerId = "";
+        let selectedOverseerName = "";
+
+        // UI Helpers
+        window.openDialog = (id) => {
+            document.getElementById(id).classList.remove('hidden');
+            document.getElementById(id).classList.add('flex');
+        };
+        window.closeDialog = (id) => {
+            document.getElementById(id).classList.add('hidden');
+            document.getElementById(id).classList.remove('flex');
+        };
+
+        async function loadData() {
+            try {
+                document.getElementById('loading-state').classList.remove('hidden');
+                document.getElementById('view-list').classList.add('hidden');
+                document.getElementById('view-detail').classList.add('hidden');
+
+                const membersSnap = await getDocs(collection(db, "members"));
+                allMembers = membersSnap.docs.map(doc => ({
+                    id: doc.id,
+                    name: doc.data().name || "",
+                    gender: doc.data().gender || "Male",
+                    baptismStatus: doc.data().baptismStatus || "Enrolled in School",
+                    fieldServiceGroup: doc.data().fieldServiceGroup || ""
+                })).sort((a, b) => a.name.localeCompare(b.name));
+
+                const groupsSnap = await getDocs(collection(db, "field_service_groups"));
+                groupDataList = groupsSnap.docs.map(doc => ({
+                    id: doc.id,
+                    data: doc.data() || {}
+                })).sort((a, b) => (a.data.name || "").localeCompare(b.data.name || ""));
+
+                const indexRef = doc(db, "metadata", "releases_index");
+                const indexSnap = await getDoc(indexRef);
+                if (indexSnap.exists()) {
+                    const releases = indexSnap.data().all_releases || [];
+                    const groupRelease = releases.find(r => r.type === "field_service_groups");
+                    if (groupRelease) {
+                        releaseId = groupRelease.id;
+                        isPublished = true;
+                        document.getElementById('publish-btn').innerText = "Update";
+                    }
+                }
+
+                document.getElementById('loading-state').classList.add('hidden');
+                renderCurrentView();
+
+            } catch (error) {
+                alert("Error loading data: " + error.message);
+            }
+        }
+
+        function getMemberSegments() {
+            const enrolled = allMembers.filter(m => m.baptismStatus === "Enrolled in School");
+            const eligible = allMembers.filter(m => m.baptismStatus === "Unbaptized Publisher" || m.baptismStatus === "Baptized");
+            const unassigned = eligible.filter(m => !m.fieldServiceGroup);
+            return { enrolled, eligible, unassigned };
+        }
+
+        window.renderCurrentView = () => {
+            if (currentView === "LIST") {
+                document.getElementById('view-list').classList.remove('hidden');
+                document.getElementById('view-detail').classList.add('hidden');
+                document.getElementById('header-title').innerText = "Field Service Groups";
+                document.getElementById('back-btn').classList.add('hidden');
+                document.getElementById('fab-create').classList.remove('hidden');
+                document.getElementById('fab-add-member').classList.add('hidden');
+                document.getElementById('publish-btn').classList.remove('hidden');
+
+                const { enrolled, eligible, unassigned } = getMemberSegments();
+                
+                const groupsContainer = document.getElementById('groups-container');
+                groupsContainer.innerHTML = "";
+                
+                groupDataList.forEach(group => {
+                    const gName = group.data.name || "Unnamed";
+                    const count = eligible.filter(m => m.fieldServiceGroup === gName).length;
+                    
+                    let overseerText = "";
+                    if(group.data.overseerName) overseerText += `<p class="text-sm text-gray-600 mt-1">Overseer: <span class="font-medium">${group.data.overseerName}</span></p>`;
+                    if(group.data.assistantOverseerName) overseerText += `<p class="text-sm text-gray-600">Asst: <span class="font-medium">${group.data.assistantOverseerName}</span></p>`;
+
+                    groupsContainer.innerHTML += `
+                        <div onclick="openGroupDetail('${group.id}', '${gName}')" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow">
+                            <div class="flex items-center">
+                                <div class="bg-premium-50 text-premium-800 p-2 rounded-2xl mr-4"><i class="material-icons">groups</i></div>
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-gray-800 text-lg">${gName}</h3>
+                                    ${overseerText}
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-2xl font-semibold text-premium-800">${count}</span>
+                                    <p class="text-xs text-gray-500 uppercase tracking-wide">Members</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                const othersContainer = document.getElementById('others-container');
+                othersContainer.innerHTML = "";
+                if (unassigned.length > 0) {
+                    othersContainer.innerHTML += buildOtherCard("Unassigned Members", unassigned.length, "");
+                }
+                othersContainer.innerHTML += buildOtherCard("Enrolled in School", enrolled.length, "");
+
+            } else {
+                // DETAIL VIEW
+                document.getElementById('view-list').classList.add('hidden');
+                document.getElementById('view-detail').classList.remove('hidden');
+                document.getElementById('header-title').innerText = selectedGroupName;
+                document.getElementById('back-btn').classList.remove('hidden');
+                document.getElementById('fab-create').classList.add('hidden');
+                document.getElementById('publish-btn').classList.add('hidden');
+
+                const isSpecialGroup = selectedGroupName === "Enrolled in School" || selectedGroupName === "Unassigned Members";
+                
+                if (!isSpecialGroup) {
+                    document.getElementById('fab-add-member').classList.remove('hidden');
+                    renderOverseerCards();
+                } else {
+                    document.getElementById('fab-add-member').classList.add('hidden');
+                    document.getElementById('overseer-cards').innerHTML = ""; // Clear
+                }
+
+                const { enrolled, eligible, unassigned } = getMemberSegments();
+                let groupMembers = [];
+                if (selectedGroupName === "Enrolled in School") groupMembers = enrolled;
+                else if (selectedGroupName === "Unassigned Members") groupMembers = unassigned;
+                else groupMembers = eligible.filter(m => m.fieldServiceGroup === selectedGroupName);
+
+                const membersContainer = document.getElementById('members-container');
+                membersContainer.innerHTML = "";
+                
+                if (groupMembers.length === 0) {
+                    membersContainer.innerHTML = `<p class="text-center text-gray-500 mt-8 italic">No members in this group</p>`;
+                } else {
+                    groupMembers.forEach(member => {
+                        const canEdit = !isSpecialGroup;
+                        membersContainer.innerHTML += `
+                            <div ${canEdit ? `onclick="openMemberAction('${member.id}')"` : ''} class="bg-white p-4 rounded-2xl border border-gray-100 flex items-center ${canEdit ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''}">
+                                <div class="bg-gray-100 text-gray-600 p-2 rounded-2xl mr-4"><i class="material-icons">person</i></div>
+                                <span class="font-medium text-gray-800 flex-1">${member.name}</span>
+                                ${canEdit ? `<i class="material-icons text-gray-400">more_vert</i>` : ''}
+                            </div>
+                        `;
+                    });
+                }
+            }
+        }
+
+        function buildOtherCard(name, count, id) {
+            return `
+                <div onclick="openGroupDetail('${id}', '${name}')" class="bg-gray-100/70 p-4 rounded-2xl border border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors flex items-center">
+                    <i class="material-icons text-gray-500 mr-4">person_outline</i>
+                    <h3 class="font-medium text-gray-700 flex-1">${name}</h3>
+                    <span class="font-bold text-gray-600">${count}</span>
+                </div>
+            `;
+        }
+
+        function renderOverseerCards() {
+            const groupData = groupDataList.find(g => g.id === selectedGroupId)?.data || {};
+            const container = document.getElementById('overseer-cards');
+            
+            const buildCard = (roleTitle, idKey, nameKey, roleMode) => {
+                const hasPerson = !!groupData[idKey];
+                const content = hasPerson 
+                    ? `<div class="flex items-center">
+                         <span class="text-lg font-medium text-premium-900 flex-1">${groupData[nameKey]}</span>
+                         <button onclick="removeOverseer('${idKey}', '${nameKey}')" class="text-gray-400 hover:text-red-500 bg-gray-50 p-2 rounded-2xl transition-colors"><i class="material-icons text-sm">close</i></button>
+                       </div>`
+                    : `<button onclick="openAssignDialog('${roleMode}')" class="text-premium-600 font-medium hover:text-premium-800 flex items-center transition-colors"><i class="material-icons text-sm mr-2">add</i> Assign ${roleTitle}</button>`;
+                
+                return `
+                    <div class="bg-premium-50/50 border border-premium-100 p-5 rounded-2xl">
+                        <h4 class="text-xs font-bold text-premium-800 uppercase tracking-wider mb-2 flex items-center"><i class="material-icons text-sm mr-2">shield</i> ${roleTitle}</h4>
+                        ${content}
+                    </div>
+                `;
+            };
+
+            container.innerHTML = `
+                ${buildCard("Group Overseer", "overseerId", "overseerName", "overseer")}
+                ${buildCard("Assistant Overseer", "assistantOverseerId", "assistantOverseerName", "assistant")}
+            `;
+        }
+
+        window.openGroupDetail = (id, name) => {
+            selectedGroupId = id;
+            selectedGroupName = name;
+            currentView = "DETAIL";
+            renderCurrentView();
+        };
+
+        window.navigateBack = () => {
+            currentView = "LIST";
+            renderCurrentView();
+        };
+
+        // --- Create Group ---
+        window.createGroup = async () => {
+            const name = document.getElementById('new-group-name').value.trim();
+            if (!name) return;
+            if (groupDataList.some(g => g.data.name === name)) return alert("Group name already exists.");
+
+            try {
+                await addDoc(collection(db, "field_service_groups"), { name });
+                document.getElementById('new-group-name').value = "";
+                closeDialog('dialog-create');
+                await loadData();
+            } catch (e) { alert("Error creating group."); }
+        };
+
+        // --- Add Members ---
+        window.openAddMembersDialog = () => {
+            selectedMemberIds.clear();
+            const { unassigned } = getMemberSegments();
+            const list = document.getElementById('unassigned-list');
+            list.innerHTML = "";
+            
+            if (unassigned.length === 0) {
+                list.innerHTML = `<p class="text-gray-500 italic mt-2">No unassigned eligible members available.</p>`;
+            } else {
+                unassigned.forEach(m => {
+                    list.innerHTML += `
+                        <label class="flex items-center p-3 hover:bg-gray-50 rounded-2xl cursor-pointer transition-colors border border-transparent hover:border-gray-200">
+                            <input type="checkbox" value="${m.id}" onchange="toggleMemberSelection(this)" class="w-5 h-5 text-premium-600 rounded focus:ring-premium-600 border-gray-300">
+                            <span class="ml-3 text-gray-700 font-medium">${m.name}</span>
+                        </label>
+                    `;
+                });
+            }
+            openDialog('dialog-add-members');
+        };
+
+        window.toggleMemberSelection = (cb) => {
+            if (cb.checked) selectedMemberIds.add(cb.value);
+            else selectedMemberIds.delete(cb.value);
+        };
+
+        window.confirmAddMembers = async () => {
+            if (selectedMemberIds.size === 0) return closeDialog('dialog-add-members');
+            try {
+                const promises = Array.from(selectedMemberIds).map(id => 
+                    updateDoc(doc(db, "members", id), { fieldServiceGroup: selectedGroupName })
+                );
+                await Promise.all(promises);
+                closeDialog('dialog-add-members');
+                await loadData();
+            } catch(e) { alert("Error adding members."); }
+        };
+
+        // --- Member Actions ---
+        window.openMemberAction = (memberId) => {
+            actionMember = allMembers.find(m => m.id === memberId);
+            document.getElementById('action-member-name').innerText = actionMember.name;
+            openDialog('dialog-member-action');
+        };
+
+        window.removeFromGroup = async () => {
+            try {
+                await updateDoc(doc(db, "members", actionMember.id), { fieldServiceGroup: "" });
+                closeDialog('dialog-member-action');
+                await loadData();
+            } catch(e) { alert("Error removing member."); }
+        };
+
+        window.openMoveGroup = () => {
+            closeDialog('dialog-member-action');
+            moveTargetGroup = "";
+            const list = document.getElementById('move-group-list');
+            list.innerHTML = "";
+            
+            const otherGroups = groupDataList.map(g => g.data.name).filter(n => n && n !== actionMember.fieldServiceGroup);
+            if (otherGroups.length === 0) {
+                list.innerHTML = `<p class="text-gray-500 italic mt-2">No other groups available.</p>`;
+            } else {
+                otherGroups.forEach(gName => {
+                    list.innerHTML += `
+                        <label class="flex items-center p-3 hover:bg-gray-50 rounded-2xl cursor-pointer transition-colors border border-transparent hover:border-gray-200">
+                            <input type="radio" name="moveTarget" value="${gName}" onchange="moveTargetGroup = this.value" class="w-5 h-5 text-premium-600 focus:ring-premium-600 border-gray-300">
+                            <span class="ml-3 text-gray-700 font-medium">${gName}</span>
+                        </label>
+                    `;
+                });
+            }
+            openDialog('dialog-move-group');
+        };
+
+        window.confirmMoveGroup = async () => {
+            if (!moveTargetGroup) return;
+            try {
+                await updateDoc(doc(db, "members", actionMember.id), { fieldServiceGroup: moveTargetGroup });
+                closeDialog('dialog-move-group');
+                await loadData();
+            } catch(e) { alert("Error moving member."); }
+        };
+
+        // --- Overseer Assignment ---
+        window.openAssignDialog = (mode) => {
+            assignMode = mode;
+            document.getElementById('assign-title').innerText = mode === "overseer" ? "Assign Overseer" : "Assign Assistant";
+            document.getElementById('assign-step-1').classList.remove('hidden');
+            document.getElementById('assign-step-2').classList.add('hidden');
+            document.getElementById('assign-cancel-btn').classList.remove('hidden');
+            openDialog('dialog-assign-overseer');
+        };
+
+        window.showOverseerList = (source) => {
+            selectedOverseerId = ""; selectedOverseerName = "";
+            const list = document.getElementById('overseer-candidate-list');
+            list.innerHTML = "";
+            
+            let candidates = allMembers.filter(m => m.gender === "Male");
+            if (source === "group") {
+                candidates = candidates.filter(m => m.fieldServiceGroup === selectedGroupName);
+            }
+            
+            if (candidates.length === 0) {
+                list.innerHTML = `<p class="text-gray-500 italic mt-2">No eligible males found.</p>`;
+            } else {
+                candidates.forEach(man => {
+                    list.innerHTML += `
+                        <label class="flex items-center p-3 hover:bg-gray-50 rounded-2xl cursor-pointer transition-colors border border-transparent hover:border-gray-200">
+                            <input type="radio" name="assignCandidate" value="${man.id}" onchange="selectedOverseerId='${man.id}'; selectedOverseerName='${man.name}'" class="w-5 h-5 text-premium-600 focus:ring-premium-600 border-gray-300">
+                            <span class="ml-3 text-gray-700 font-medium">${man.name}</span>
+                        </label>
+                    `;
+                });
+            }
+
+            document.getElementById('assign-step-1').classList.add('hidden');
+            document.getElementById('assign-step-2').classList.remove('hidden');
+            document.getElementById('assign-cancel-btn').classList.add('hidden');
+        };
+
+        window.confirmAssignOverseer = async () => {
+            if (!selectedOverseerId) return;
+            try {
+                const updates = assignMode === "overseer" 
+                    ? { overseerId: selectedOverseerId, overseerName: selectedOverseerName }
+                    : { assistantOverseerId: selectedOverseerId, assistantOverseerName: selectedOverseerName };
+                
+                await updateDoc(doc(db, "field_service_groups", selectedGroupId), updates);
+                closeDialog('dialog-assign-overseer');
+                await loadData();
+            } catch(e) { alert("Error assigning."); }
+        };
+
+        window.removeOverseer = async (idKey, nameKey) => {
+            try {
+                const updates = {};
+                updates[idKey] = deleteField();
+                updates[nameKey] = deleteField();
+                await updateDoc(doc(db, "field_service_groups", selectedGroupId), updates);
+                await loadData();
+            } catch(e) { alert("Error removing role."); }
+        };
+
+        // --- Publishing ---
+        window.publishGroups = async () => {
+            const btn = document.getElementById('publish-btn');
+            btn.innerText = "Publishing..."; btn.disabled = true;
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const indexRef = doc(db, "metadata", "releases_index");
+                    const indexSnap = await transaction.get(indexRef);
+                    let allReleases = indexSnap.exists() ? indexSnap.data().all_releases || [] : [];
+
+                    if (isPublished && releaseId) {
+                        allReleases = allReleases.map(r => r.id === releaseId ? { ...r, version: (r.version || 1) + 1, publishedAt: Date.now() } : r);
+                        transaction.update(indexRef, { all_releases: allReleases });
+                    } else {
+                        const newReleaseId = crypto.randomUUID();
+                        const newRelease = { id: newReleaseId, title: "Field Service Groups", type: "field_service_groups", startDate: "", endDate: "", publishedAt: Date.now(), version: 1 };
+                        transaction.set(indexRef, { all_releases: [newRelease, ...allReleases] }, { merge: true });
+                        releaseId = newReleaseId;
+                        isPublished = true;
+                    }
+                });
+
+                const title = encodeURIComponent(isPublished ? "Field Service Groups Updated" : "New Field Service Groups");
+                const body = encodeURIComponent(isPublished ? "Changes have been made to the field service groups." : "Field service groups are now available.");
+                fetch(`https://us-central1-schedy-congegation.cloudfunctions.net/sendScheduleNotification?key=schedy_admin_secure_9922&title=${title}&body=${body}`);
+
+                alert(isPublished ? "Groups updated for users" : "Groups published");
+                btn.innerText = "Update";
+            } catch (e) {
+                alert("Error publishing: " + e.message);
+                btn.innerText = isPublished ? "Update" : "Publish";
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>
