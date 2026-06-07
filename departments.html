@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Departments</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* Hide scrollbar for a cleaner look in modal */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <header class="bg-blue-600 text-white shadow-md p-4 flex items-center sticky top-0 z-10">
+        <button onclick="window.history.back()" class="mr-4"><i class="material-icons">arrow_back</i></button>
+        <h1 class="text-xl font-bold flex-1">Departments</h1>
+        <button id="publish-btn" onclick="publishDepartments()" class="bg-blue-800 text-white px-4 py-2 rounded-2xl font-bold hover:bg-blue-900 transition flex items-center disabled:opacity-50">
+            Publish
+        </button>
+    </header>
+
+    <div class="bg-white shadow-sm sticky top-[68px] z-10">
+        <div class="flex border-b max-w-3xl mx-auto">
+            <button id="tab-elder" onclick="switchTab('elder')" class="flex-1 py-3 text-center border-b-2 border-blue-600 font-bold text-blue-600 transition">Elder Departments</button>
+            <button id="tab-cong" onclick="switchTab('congregation')" class="flex-1 py-3 text-center text-gray-500 font-medium hover:text-gray-700 transition">Congregation Departments</button>
+        </div>
+    </div>
+
+    <main class="max-w-3xl mx-auto p-4 pb-24" id="main-content">
+        <div id="loading-state" class="flex justify-center mt-12">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+        <div id="departments-list" class="space-y-3 hidden"></div>
+    </main>
+
+    <div id="edit-dialog" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 w-[400px] max-w-[90%] max-h-[90vh] flex flex-col">
+            <h2 id="edit-title" class="text-xl font-bold mb-4">Edit Department</h2>
+            
+            <div class="overflow-y-auto flex-1 pr-2 space-y-4">
+                <div>
+                    <label class="font-bold text-gray-700 block mb-1">Coordinator:</label>
+                    <select id="coordinator-select" class="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="">None</option>
+                        </select>
+                </div>
+
+                <hr>
+
+                <div>
+                    <label class="font-bold text-gray-700 block mb-2">Assistants (multiple):</label>
+                    
+                    <div id="assistants-chips" class="flex flex-wrap gap-2 mb-3">
+                        </div>
+
+                    <div class="flex gap-2">
+                        <select id="assistant-select" class="flex-1 border p-2 rounded bg-white">
+                            <option value="" disabled selected>Select Assistant...</option>
+                            </select>
+                        <button onclick="addAssistant()" class="bg-gray-200 text-gray-800 px-3 py-2 rounded-2xl hover:bg-gray-300 transition flex items-center">
+                            <i class="material-icons text-sm mr-1">add</i> Add
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 mt-6 pt-4 border-t">
+                <button onclick="closeEditDialog()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-2xl">Cancel</button>
+                <button onclick="saveDepartment()" id="save-btn" class="px-4 py-2 bg-blue-600 text-white rounded-2xl hover:bg-blue-700">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, writeBatch, runTransaction, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDq-NkomNItBZorK7GQqvcFwSvFB5oHMaA",
+            authDomain: "schedy-congegation.firebaseapp.com",
+            projectId: "schedy-congegation",
+            storageBucket: "schedy-congegation.firebasestorage.app",
+            messagingSenderId: "642904120818",
+            appId: "1:642904120818:web:6a1cd7c2cd0dc460d41f6b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // State
+        let allDepartments = [];
+        let maleMembers = [];
+        let currentTab = 'elder';
+        
+        let releaseId = null;
+        let isPublished = false;
+
+        // Edit State
+        let editingDeptId = null;
+        let tempAssistants = []; // Array of IDs
+
+        const elderDefs = [
+            ["Body of Elder Coordinator", "BOE"], ["Secretary", "BOE"], ["Service Overseer", "BOE"], 
+            ["Watchtower Conductor", "BOE"], ["Life and Ministry Manager", "BOE"], ["Public Talk Manager", "BOE"], ["Assistant Advisor", "BOE"]
+        ];
+        const congDefs = [
+            ["Audio & Video", "BOE"], ["Stage", "BOE"], ["Cleaning", "BOE"], ["Attendant", "BOE"], 
+            ["Accounts", "Secretary"], ["Contribution Box", "Secretary"], ["Literature", "Service Overseer"], ["Territory", "Service Overseer"]
+        ];
+
+        async function init() {
+            try {
+                // 1. Fetch Male Members
+                const q = query(collection(db, "members"), where("gender", "==", "Male"));
+                const membersSnap = await getDocs(q);
+                maleMembers = membersSnap.docs.map(d => ({ id: d.id, name: d.data().name || "" })).sort((a, b) => a.name.localeCompare(b.name));
+                
+                populateSelects();
+
+                // 2. Fetch Departments
+                await fetchDepartments();
+
+                // 3. Fetch Release Metadata
+                const indexRef = doc(db, "metadata", "releases_index");
+                const indexSnap = await getDoc(indexRef);
+                if (indexSnap.exists()) {
+                    const releases = indexSnap.data().all_releases || [];
+                    const deptRelease = releases.find(r => r.type === "departments");
+                    if (deptRelease) {
+                        releaseId = deptRelease.id;
+                        isPublished = true;
+                        document.getElementById('publish-btn').innerText = "Update";
+                    }
+                }
+
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('departments-list').classList.remove('hidden');
+                renderList();
+
+            } catch (e) {
+                alert("Error initializing: " + e.message);
+            }
+        }
+
+        async function fetchDepartments() {
+            const deptSnap = await getDocs(collection(db, "departments"));
+            let existing = deptSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            // Seed database if empty (Replicating Kotlin Logic)
+            if (existing.length === 0) {
+                const batch = writeBatch(db);
+                
+                elderDefs.forEach(([name, manager]) => {
+                    const ref = doc(collection(db, "departments"));
+                    batch.set(ref, { name, type: "elder", manager, coordinatorId: null, coordinatorName: null, assistantIds: [], assistantNames: [] });
+                });
+                
+                congDefs.forEach(([name, manager]) => {
+                    const ref = doc(collection(db, "departments"));
+                    batch.set(ref, { name, type: "congregation", manager, coordinatorId: null, coordinatorName: null, assistantIds: [], assistantNames: [] });
+                });
+
+                await batch.commit();
+                
+                // Refetch after seeding
+                const updatedSnap = await getDocs(collection(db, "departments"));
+                existing = updatedSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            }
+            
+            allDepartments = existing;
+        }
+
+        function populateSelects() {
+            const coordSelect = document.getElementById('coordinator-select');
+            const asstSelect = document.getElementById('assistant-select');
+            
+            maleMembers.forEach(m => {
+                coordSelect.innerHTML += `<option value="${m.id}">${m.name}</option>`;
+                asstSelect.innerHTML += `<option value="${m.id}">${m.name}</option>`;
+            });
+        }
+
+        // --- UI Updates ---
+        window.switchTab = (tab) => {
+            currentTab = tab;
+            const tElder = document.getElementById('tab-elder');
+            const tCong = document.getElementById('tab-cong');
+            
+            if (tab === 'elder') {
+                tElder.className = "flex-1 py-3 text-center border-b-2 border-blue-600 font-bold text-blue-600 transition";
+                tCong.className = "flex-1 py-3 text-center text-gray-500 font-medium hover:text-gray-700 transition";
+            } else {
+                tCong.className = "flex-1 py-3 text-center border-b-2 border-blue-600 font-bold text-blue-600 transition";
+                tElder.className = "flex-1 py-3 text-center text-gray-500 font-medium hover:text-gray-700 transition";
+            }
+            renderList();
+        };
+
+        window.renderList = () => {
+            const listEl = document.getElementById('departments-list');
+            listEl.innerHTML = "";
+            
+            const filtered = allDepartments.filter(d => d.type === currentTab);
+            
+            filtered.forEach(dept => {
+                const coordName = dept.coordinatorName || "None";
+                const asstNames = (dept.assistantNames && dept.assistantNames.length > 0) ? dept.assistantNames.join(", ") : "None";
+                const managerText = dept.manager ? `<p class="text-xs text-gray-500">Managed by: ${dept.manager}</p>` : "";
+
+                listEl.innerHTML += `
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition" onclick="openEditDialog('${dept.id}')">
+                        <div class="flex items-center mb-1">
+                            <i class="material-icons text-blue-600 mr-2 text-xl">build</i>
+                            <h3 class="font-bold text-gray-800 text-lg">${dept.name}</h3>
+                        </div>
+                        ${managerText}
+                        <div class="mt-3 text-sm text-gray-700 space-y-1">
+                            <p><span class="font-semibold">Coordinator:</span> ${coordName}</p>
+                            <p><span class="font-semibold">Assistants:</span> ${asstNames}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        };
+
+        // --- Editing Logic ---
+        window.openEditDialog = (deptId) => {
+            const dept = allDepartments.find(d => d.id === deptId);
+            if (!dept) return;
+
+            editingDeptId = deptId;
+            tempAssistants = [...(dept.assistantIds || [])];
+
+            document.getElementById('edit-title').innerText = `Edit ${dept.name}`;
+            document.getElementById('coordinator-select').value = dept.coordinatorId || "";
+            document.getElementById('assistant-select').value = ""; // Reset dropdown
+            
+            renderAssistantChips();
+            document.getElementById('edit-dialog').classList.remove('hidden');
+            document.getElementById('edit-dialog').classList.add('flex');
+        };
+
+        window.closeEditDialog = () => {
+            document.getElementById('edit-dialog').classList.add('hidden');
+            document.getElementById('edit-dialog').classList.remove('flex');
+            editingDeptId = null;
+        };
+
+        window.addAssistant = () => {
+            const select = document.getElementById('assistant-select');
+            const selectedId = select.value;
+            
+            if (!selectedId) return;
+            if (tempAssistants.includes(selectedId)) return alert("Assistant already added.");
+            
+            const currentCoordinatorId = document.getElementById('coordinator-select').value;
+            if (selectedId === currentCoordinatorId) return alert("Cannot add the Coordinator as an Assistant.");
+
+            tempAssistants.push(selectedId);
+            select.value = ""; // reset
+            renderAssistantChips();
+        };
+
+        window.removeAssistant = (idToRemove) => {
+            tempAssistants = tempAssistants.filter(id => id !== idToRemove);
+            renderAssistantChips();
+        };
+
+        function renderAssistantChips() {
+            const container = document.getElementById('assistants-chips');
+            container.innerHTML = tempAssistants.length === 0 ? '<span class="text-gray-400 text-sm italic">None added</span>' : '';
+
+            tempAssistants.forEach(id => {
+                const member = maleMembers.find(m => m.id === id);
+                const name = member ? member.name : id;
+                container.innerHTML += `
+                    <div class="bg-blue-50 text-blue-800 text-sm px-3 py-1.5 rounded-full flex items-center border border-blue-100">
+                        ${name}
+                        <i class="material-icons text-sm ml-2 cursor-pointer hover:text-red-500" onclick="removeAssistant('${id}')">close</i>
+                    </div>
+                `;
+            });
+        }
+
+        window.saveDepartment = async () => {
+            const btn = document.getElementById('save-btn');
+            btn.innerText = "Saving..."; btn.disabled = true;
+
+            try {
+                const coordId = document.getElementById('coordinator-select').value;
+                const coordMember = maleMembers.find(m => m.id === coordId);
+                
+                const asstNames = tempAssistants.map(id => maleMembers.find(m => m.id === id)?.name || "Unknown");
+
+                const updates = {
+                    coordinatorId: coordId || null,
+                    coordinatorName: coordMember ? coordMember.name : null,
+                    assistantIds: tempAssistants,
+                    assistantNames: asstNames
+                };
+
+                await updateDoc(doc(db, "departments", editingDeptId), updates);
+                
+                // Update local state instantly
+                const idx = allDepartments.findIndex(d => d.id === editingDeptId);
+                allDepartments[idx] = { ...allDepartments[idx], ...updates };
+                
+                renderList();
+                closeEditDialog();
+            } catch (e) {
+                alert("Error saving: " + e.message);
+            } finally {
+                btn.innerText = "Save"; btn.disabled = false;
+            }
+        };
+
+        // --- Publishing Logic ---
+        window.publishDepartments = async () => {
+            const btn = document.getElementById('publish-btn');
+            btn.innerText = "Publishing..."; btn.disabled = true;
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const indexRef = doc(db, "metadata", "releases_index");
+                    const indexSnap = await transaction.get(indexRef);
+                    let allReleases = indexSnap.exists() ? indexSnap.data().all_releases || [] : [];
+
+                    if (isPublished && releaseId) {
+                        // Update existing
+                        allReleases = allReleases.map(r => {
+                            if (r.id === releaseId) {
+                                return { ...r, version: (r.version || 1) + 1, publishedAt: Date.now() };
+                            }
+                            return r;
+                        });
+                        transaction.update(indexRef, { all_releases: allReleases });
+                    } else {
+                        // Create new
+                        const newReleaseId = crypto.randomUUID();
+                        const newRelease = {
+                            id: newReleaseId, title: "Departments", type: "departments",
+                            startDate: "", endDate: "", publishedAt: Date.now(), version: 1
+                        };
+                        transaction.set(indexRef, { all_releases: [newRelease, ...allReleases] }, { merge: true });
+                        releaseId = newReleaseId;
+                        isPublished = true;
+                    }
+                });
+
+                // Push Notification
+                const title = encodeURIComponent(isPublished ? "Departments Schedule Updated" : "New Departments Schedule");
+                const body = encodeURIComponent(isPublished ? "Changes have been made to the departments schedule." : "The departments schedule is now available.");
+                fetch(`https://us-central1-schedy-congegation.cloudfunctions.net/sendScheduleNotification?key=schedy_admin_secure_9922&title=${title}&body=${body}`);
+
+                alert(isPublished ? "Departments updated for users" : "Departments published");
+                document.getElementById('publish-btn').innerText = "Update";
+
+            } catch (e) {
+                alert("Error publishing: " + e.message);
+                document.getElementById('publish-btn').innerText = isPublished ? "Update" : "Publish";
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
