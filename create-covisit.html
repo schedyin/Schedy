@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CO Visit Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800 pb-20">
+
+    <datalist id="members-list"></datalist>
+
+    <header class="bg-white shadow-sm p-4 flex items-center sticky top-0 z-20">
+        <button onclick="navigateBack()" class="text-gray-600 mr-4"><i class="material-icons">arrow_back</i></button>
+        <h1 class="text-xl font-bold flex-1 truncate" id="header-title">Loading...</h1>
+        <button id="header-delete-btn" onclick="deleteVisit()" class="text-red-500 mr-4 p-2 rounded hover:bg-red-50"><i class="material-icons">delete</i></button>
+        <button id="header-save-btn" onclick="saveData()" class="hidden bg-purple-600 text-white px-4 py-2 rounded font-bold hover:bg-purple-700">Save</button>
+    </header>
+
+    <main class="max-w-3xl mx-auto p-4 relative overflow-hidden" id="main-container">
+        
+        <div id="view-overview" class="space-y-6">
+            <div class="bg-purple-50 p-4 rounded-lg shadow-sm border border-purple-100">
+                <input type="text" id="ov-coName" placeholder="Circuit Overseer Name" class="w-full border p-3 rounded mb-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="date" id="ov-startDate" class="border p-3 rounded text-sm text-gray-600" title="Start Date">
+                    <input type="date" id="ov-endDate" class="border p-3 rounded text-sm text-gray-600" title="End Date">
+                </div>
+            </div>
+
+            <button id="publish-btn" onclick="publishVisit()" class="w-full bg-purple-600 text-white py-3 rounded font-bold hover:bg-purple-700 text-lg shadow">Publish CO Visit</button>
+
+            <h3 class="font-bold text-gray-700 uppercase text-sm tracking-wider border-b pb-2">Schedule Sections</h3>
+            <div class="space-y-3">
+                <div onclick="openSection('midweek')" class="bg-blue-50 p-4 rounded-lg shadow-sm flex items-center cursor-pointer hover:bg-blue-100 transition">
+                    <div class="flex-1"><h4 class="font-bold text-blue-900">Midweek Meeting</h4><p class="text-xs text-blue-700" id="ov-mw-desc">Not set</p></div><i class="material-icons text-blue-500">chevron_right</i>
+                </div>
+                <div onclick="openSection('weekend')" class="bg-green-50 p-4 rounded-lg shadow-sm flex items-center cursor-pointer hover:bg-green-100 transition">
+                    <div class="flex-1"><h4 class="font-bold text-green-900">Weekend Meeting</h4><p class="text-xs text-green-700" id="ov-we-desc">Not set</p></div><i class="material-icons text-green-500">chevron_right</i>
+                </div>
+                <div onclick="openSection('fieldservice')" class="bg-orange-50 p-4 rounded-lg shadow-sm flex items-center cursor-pointer hover:bg-orange-100 transition">
+                    <div class="flex-1"><h4 class="font-bold text-orange-900">Field Service</h4><p class="text-xs text-orange-700" id="ov-fs-desc">0 activities</p></div><i class="material-icons text-orange-500">chevron_right</i>
+                </div>
+            </div>
+
+            <h3 class="font-bold text-gray-700 uppercase text-sm tracking-wider border-b pb-2">CO Studies</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <div onclick="openSection('brother')" class="bg-indigo-50 p-4 rounded-lg shadow-sm flex items-center cursor-pointer hover:bg-indigo-100 transition">
+                    <div class="flex-1"><h4 class="font-bold text-indigo-900">Brother</h4><p class="text-xs text-indigo-700" id="ov-br-desc">0 entries</p></div>
+                </div>
+                <div onclick="openSection('sister')" class="bg-fuchsia-50 p-4 rounded-lg shadow-sm flex items-center cursor-pointer hover:bg-fuchsia-100 transition">
+                    <div class="flex-1"><h4 class="font-bold text-fuchsia-900">Sister (Wife)</h4><p class="text-xs text-fuchsia-700" id="ov-sr-desc">0 entries</p></div>
+                </div>
+            </div>
+
+            <h3 class="font-bold text-gray-700 uppercase text-sm tracking-wider border-b pb-2">Appointments</h3>
+            <div onclick="openSection('other')" class="bg-red-50 p-4 rounded-lg shadow-sm flex items-center cursor-pointer hover:bg-red-100 transition">
+                <div class="flex-1"><h4 class="font-bold text-red-900">Other Meetings</h4><p class="text-xs text-red-700">Elders & MS, Pioneers</p></div><i class="material-icons text-red-500">edit</i>
+            </div>
+            
+            <button onclick="saveData()" class="w-full border-2 border-purple-600 text-purple-600 py-3 rounded font-bold hover:bg-purple-50 mt-4">Save Draft</button>
+        </div>
+
+        <div id="view-midweek" class="hidden space-y-4">
+            <input type="date" id="mwDate" class="w-full border p-3 rounded">
+            <input type="text" id="mwScriptures" placeholder="Scriptures of the Week" class="w-full border p-3 rounded">
+            <div><label class="text-xs text-gray-500">Chairman</label><input list="members-list" id="mwChairman" class="w-full border p-3 rounded"></div>
+            
+            <h3 class="font-bold text-blue-600 border-b pt-4">Opening</h3>
+            <div class="flex gap-2"><input type="text" id="mwOpeningSong" placeholder="Song #" class="border p-3 rounded w-1/4"><input type="text" id="mwOpeningSongTitle" placeholder="Title" class="border p-3 rounded flex-1"></div>
+            <input type="text" id="mwOpeningSongScripture" placeholder="Song Scripture" class="w-full border p-3 rounded">
+            <div><label class="text-xs text-gray-500">Opening Prayer</label><input list="members-list" id="mwOpeningPrayer" class="w-full border p-3 rounded"></div>
+
+            <h3 class="font-bold text-blue-600 border-b pt-4">Treasures from God's Word</h3>
+            <input type="text" id="mwTalkTitle" placeholder="10 min Talk Title" class="w-full border p-3 rounded">
+            <div><label class="text-xs text-gray-500">Speaker</label><input list="members-list" id="mwTalkSpeaker" class="w-full border p-3 rounded"></div>
+            <div class="flex gap-2"><input list="members-list" id="mwGemsConductor" placeholder="Gems Conductor" class="border p-3 rounded w-1/2"><input list="members-list" id="mwGemsRoving" placeholder="Gems Roving" class="border p-3 rounded w-1/2"></div>
+            <div class="flex gap-2"><input type="text" id="mwBibleReadingScriptures" placeholder="Bible Reading" class="border p-3 rounded w-1/2"><input type="text" id="mwBibleReadingScripturesLink" placeholder="Link" class="border p-3 rounded w-1/2"></div>
+            <div><label class="text-xs text-gray-500">Bible Reader</label><input list="members-list" id="mwBibleReader" class="w-full border p-3 rounded"></div>
+            <div class="flex gap-2"><input type="text" id="mwBibleReadingCounselPoint" placeholder="Counsel Pt" class="border p-3 rounded w-1/2"><input type="text" id="mwBibleReadingCounselPointLink" placeholder="Counsel Link" class="border p-3 rounded w-1/2"></div>
+
+            <div class="flex justify-between items-center border-b pt-4"><h3 class="font-bold text-blue-600">Field Ministry</h3><button onclick="addMWPart()" class="text-blue-600"><i class="material-icons">add_circle</i></button></div>
+            <div id="mw-ministry-container" class="space-y-3"></div>
+
+            <h3 class="font-bold text-blue-600 border-b pt-4">Middle Song</h3>
+            <div class="flex gap-2"><input type="text" id="mwMiddleSong" placeholder="Song #" class="border p-3 rounded w-1/4"><input type="text" id="mwMiddleSongTitle" placeholder="Title" class="border p-3 rounded flex-1"></div>
+            <input type="text" id="mwMiddleSongScripture" placeholder="Song Scripture" class="w-full border p-3 rounded">
+
+            <div class="flex justify-between items-center border-b pt-4"><h3 class="font-bold text-blue-600">Living as Christians</h3><button onclick="addChrisPart()" class="text-blue-600"><i class="material-icons">add_circle</i></button></div>
+            <div id="mw-christian-container" class="space-y-3"></div>
+
+            <h3 class="font-bold text-blue-600 border-b pt-4">CO Service Talk</h3>
+            <input type="text" id="mwCoServiceTalkTitle" value="Service Talk" class="w-full border p-3 rounded">
+
+            <h3 class="font-bold text-blue-600 border-b pt-4">Closing</h3>
+            <div class="flex gap-2"><input type="text" id="mwClosingSong" placeholder="Song #" class="border p-3 rounded w-1/4"><input type="text" id="mwClosingSongTitle" placeholder="Title" class="border p-3 rounded flex-1"></div>
+            <input type="text" id="mwClosingSongScripture" placeholder="Song Scripture" class="w-full border p-3 rounded">
+            <div><label class="text-xs text-gray-500">Closing Prayer</label><input list="members-list" id="mwClosingPrayer" class="w-full border p-3 rounded"></div>
+        </div>
+
+        <div id="view-weekend" class="hidden space-y-4">
+            <input type="date" id="weDate" class="w-full border p-3 rounded">
+            <div><label class="text-xs text-gray-500">Chairman</label><input list="members-list" id="weChairman" class="w-full border p-3 rounded"></div>
+            
+            <h3 class="font-bold text-green-600 border-b pt-4">Public Talk</h3>
+            <div><label class="text-xs text-gray-500">Speaker</label><input list="members-list" id="weSpeakerName" class="w-full border p-3 rounded"></div>
+            <input type="text" id="weTalkTitle" placeholder="Talk Title" class="w-full border p-3 rounded">
+            <input type="text" id="weTalkNumber" placeholder="Talk Number" class="w-full border p-3 rounded">
+            <input type="text" id="weTalkNumberLink" placeholder="Talk Link (URL)" class="w-full border p-3 rounded">
+
+            <h3 class="font-bold text-green-600 border-b pt-4">CO Concluding Talk</h3>
+            <input type="text" id="weCoConcludingTalk" value="Concluding Talk" class="w-full border p-3 rounded">
+        </div>
+
+        <div id="view-fieldservice" class="hidden space-y-4">
+            <div class="flex justify-between items-center"><h2 class="text-lg font-bold">Activities</h2><button onclick="addFS()" class="text-orange-600 bg-orange-100 px-3 py-1 rounded">+ Add</button></div>
+            <div id="fs-container" class="space-y-4"></div>
+        </div>
+
+        <div id="view-brother" class="hidden space-y-4">
+            <div class="flex justify-between items-center"><h2 class="text-lg font-bold text-indigo-700">Brother's Studies</h2><button onclick="addStudy('br')" class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded">+ Add</button></div>
+            <div id="br-container" class="space-y-3"></div>
+        </div>
+        <div id="view-sister" class="hidden space-y-4">
+            <div class="flex justify-between items-center"><h2 class="text-lg font-bold text-fuchsia-700">Sister's Studies</h2><button onclick="addStudy('sr')" class="bg-fuchsia-100 text-fuchsia-700 px-3 py-1 rounded">+ Add</button></div>
+            <div id="sr-container" class="space-y-3"></div>
+        </div>
+
+        <div id="view-other" class="hidden space-y-6">
+            <div class="bg-white p-4 rounded shadow-sm border border-gray-200">
+                <h3 class="font-bold text-red-700 mb-2">Pioneering Meeting</h3>
+                <div class="flex gap-2"><input type="date" id="om-pio-date" class="border p-3 rounded w-1/2"><input type="time" id="om-pio-time" class="border p-3 rounded w-1/2"></div>
+            </div>
+            <div class="bg-white p-4 rounded shadow-sm border border-gray-200">
+                <h3 class="font-bold text-red-700 mb-2">Meeting with Elders & MS</h3>
+                <div class="flex gap-2"><input type="date" id="om-eld-date" class="border p-3 rounded w-1/2"><input type="time" id="om-eld-time" class="border p-3 rounded w-1/2"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const app = initializeApp({
+            apiKey: "AIzaSyDq-NkomNItBZorK7GQqvcFwSvFB5oHMaA", authDomain: "schedy-congegation.firebaseapp.com",
+            projectId: "schedy-congegation", storageBucket: "schedy-congegation.firebasestorage.app",
+            messagingSenderId: "642904120818", appId: "1:642904120818:web:6a1cd7c2cd0dc460d41f6b"
+        });
+        const db = getFirestore(app);
+        
+        const docId = new URLSearchParams(window.location.search).get('id');
+        if(!docId) window.location.href = 'covisit.html';
+
+        let currentSection = null;
+        let membersMap = {};
+        
+        // Data State
+        let dbData = {};
+        let mwMinistry = [];
+        let mwChristian = [];
+        let fsActivities = [];
+        let stBrother = [];
+        let stSister = [];
+
+        async function init() {
+            const snap = await getDocs(collection(db, "members"));
+            const datalist = document.getElementById('members-list');
+            snap.forEach(d => { membersMap[d.data().name] = d.id; const opt = document.createElement('option'); opt.value = d.data().name; datalist.appendChild(opt); });
+
+            const docSnap = await getDoc(doc(db, "covisit_schedules", docId));
+            if(docSnap.exists()){
+                dbData = docSnap.data();
+                
+                // Set Overview
+                setV('ov-coName', dbData.coName); setV('ov-startDate', dbData.weekStartDate); setV('ov-endDate', dbData.weekEndDate);
+                document.getElementById('header-title').innerText = dbData.coName || "CO Visit Setup";
+                const isPub = dbData.status === "published";
+                const pubBtn = document.getElementById('publish-btn');
+                pubBtn.innerText = isPub ? "Push Update to Users" : "Publish CO Visit";
+                if(isPub) pubBtn.classList.replace('bg-purple-600', 'bg-green-600');
+
+                // Load Midweek
+                const mw = dbData.midweek || {};
+                setV('mwDate', mw.date); setV('mwScriptures', mw.scriptures); setV('mwChairman', mw.chairman?.name);
+                setV('mwOpeningSong', mw.openingSong); setV('mwOpeningSongTitle', mw.openingSongTitle); setV('mwOpeningSongScripture', mw.openingSongScripture); setV('mwOpeningPrayer', mw.openingPrayer?.name);
+                setV('mwTalkTitle', mw.talkTitle); setV('mwTalkSpeaker', mw.talkSpeaker?.name); setV('mwGemsConductor', mw.gemsConductor?.name); setV('mwGemsRoving', mw.gemsRoving?.name);
+                setV('mwBibleReadingScriptures', mw.bibleReadingScriptures); setV('mwBibleReadingScripturesLink', mw.bibleReadingScripturesLink); setV('mwBibleReader', mw.bibleReader?.name);
+                setV('mwBibleReadingCounselPoint', mw.bibleReadingCounselPoint); setV('mwBibleReadingCounselPointLink', mw.bibleReadingCounselPointLink);
+                setV('mwMiddleSong', mw.middleSong); setV('mwMiddleSongTitle', mw.middleSongTitle); setV('mwMiddleSongScripture', mw.middleSongScripture);
+                setV('mwCoServiceTalkTitle', mw.coServiceTalkTitle || 'Service Talk');
+                setV('mwClosingSong', mw.closingSong); setV('mwClosingSongTitle', mw.closingSongTitle); setV('mwClosingSongScripture', mw.closingSongScripture); setV('mwClosingPrayer', mw.closingPrayer?.name);
+                mwMinistry = mw.ministryParts || [{title:'',time:'',description:'',descriptionLink:'',counselPoint:'',counselPointLink:'',participant1:{name:''},participant2:{name:''}}];
+                mwChristian = mw.christianParts || [{title:'',time:'',conductor:{name:''},roving:{name:''}}];
+
+                // Load Weekend
+                const we = dbData.weekend || {};
+                setV('weDate', we.date); setV('weChairman', we.chairman?.name); setV('weSpeakerName', we.speakerName?.name);
+                setV('weTalkTitle', we.talkTitle); setV('weTalkNumber', we.talkNumber); setV('weTalkNumberLink', we.talkNumberLink); setV('weCoConcludingTalk', we.coConcludingTalk || 'Concluding Talk');
+
+                // Load FS, Studies & Other
+                fsActivities = dbData.fieldService || [];
+                stBrother = dbData.coActivities?.studiesBrother || [];
+                stSister = dbData.coActivities?.studiesSister || [];
+                setV('om-pio-date', dbData.coActivities?.pioneeringMeetingDate); setV('om-pio-time', dbData.coActivities?.pioneeringMeetingTime);
+                setV('om-eld-date', dbData.coActivities?.eldersMsMeetingDate); setV('om-eld-time', dbData.coActivities?.eldersMsMeetingTime);
+                
+                updateOverviewLabels();
+                renderArrays();
+            }
+        }
+
+        // --- View & Navigation Logic ---
+        const sections = ['overview', 'midweek', 'weekend', 'fieldservice', 'brother', 'sister', 'other'];
+        window.openSection = (sec) => {
+            currentSection = sec;
+            sections.forEach(s => document.getElementById(`view-${s}`).classList.add('hidden'));
+            document.getElementById(`view-${sec}`).classList.remove('hidden');
+            
+            document.getElementById('header-delete-btn').classList.toggle('hidden', sec !== 'overview');
+            document.getElementById('header-save-btn').classList.toggle('hidden', sec === 'overview');
+            
+            const titles = { midweek:"Midweek Meeting", weekend:"Weekend Meeting", fieldservice:"Field Service", brother:"CO Studies (Bro)", sister:"CO Studies (Sis)", other:"Other Meetings" };
+            document.getElementById('header-title').innerText = titles[sec] || document.getElementById('ov-coName').value || "CO Visit Setup";
+        };
+
+        window.navigateBack = () => {
+            if(currentSection && currentSection !== 'overview') openSection('overview');
+            else window.location.href = 'covisit.html';
+        };
+
+        function updateOverviewLabels() {
+            document.getElementById('ov-mw-desc').innerText = getV('mwDate') || "Not set";
+            document.getElementById('ov-we-desc').innerText = getV('weDate') || "Not set";
+            document.getElementById('ov-fs-desc').innerText = `${fsActivities.length} activities`;
+            document.getElementById('ov-br-desc').innerText = `${stBrother.length} entries`;
+            document.getElementById('ov-sr-desc').innerText = `${stSister.length} entries`;
+        }
+
+        // --- Render Dynamic Arrays ---
+        const models = ["House to House", "Informal Witnessing", "Public Witnessing", "Street Witnessing", "Cart", "Letter", "Telephone Witnessing"];
+        window.renderArrays = () => {
+            // Ministry
+            document.getElementById('mw-ministry-container').innerHTML = mwMinistry.map((p,i) => `<div class="bg-gray-50 p-3 rounded border">
+                <div class="flex justify-between font-bold text-sm mb-2"><span>Part ${i+1}</span> <i class="material-icons text-red-500 cursor-pointer" onclick="mwMinistry.splice(${i},1);renderArrays()">delete</i></div>
+                <div class="flex gap-2 mb-2"><input type="text" value="${p.title}" onchange="mwMinistry[${i}].title=this.value" placeholder="Title" class="border p-2 rounded w-2/3"><input type="text" value="${p.time}" onchange="mwMinistry[${i}].time=this.value" placeholder="Time" class="border p-2 rounded w-1/3"></div>
+                <div class="grid grid-cols-2 gap-2 mb-2"><input type="text" value="${p.description}" onchange="mwMinistry[${i}].description=this.value" placeholder="Desc" class="border p-2 rounded"><input type="text" value="${p.descriptionLink}" onchange="mwMinistry[${i}].descriptionLink=this.value" placeholder="Link" class="border p-2 rounded"><input type="text" value="${p.counselPoint}" onchange="mwMinistry[${i}].counselPoint=this.value" placeholder="Counsel Pt" class="border p-2 rounded"><input type="text" value="${p.counselPointLink}" onchange="mwMinistry[${i}].counselPointLink=this.value" placeholder="Counsel Link" class="border p-2 rounded"></div>
+                <div class="flex gap-2"><input list="members-list" value="${p.participant1?.name||''}" onchange="mwMinistry[${i}].participant1={name:this.value}" placeholder="Person 1" class="border p-2 rounded w-1/2"><input list="members-list" value="${p.participant2?.name||''}" onchange="mwMinistry[${i}].participant2={name:this.value}" placeholder="Person 2" class="border p-2 rounded w-1/2"></div>
+            </div>`).join('');
+            
+            // Christians
+            document.getElementById('mw-christian-container').innerHTML = mwChristian.map((p,i) => `<div class="bg-gray-50 p-3 rounded border">
+                <div class="flex justify-between font-bold text-sm mb-2"><span>Part ${i+1}</span> <i class="material-icons text-red-500 cursor-pointer" onclick="mwChristian.splice(${i},1);renderArrays()">delete</i></div>
+                <div class="flex gap-2 mb-2"><input type="text" value="${p.title}" onchange="mwChristian[${i}].title=this.value" placeholder="Title" class="border p-2 rounded w-2/3"><input type="text" value="${p.time}" onchange="mwChristian[${i}].time=this.value" placeholder="Time" class="border p-2 rounded w-1/3"></div>
+                <div class="flex gap-2"><input list="members-list" value="${p.conductor?.name||''}" onchange="mwChristian[${i}].conductor={name:this.value}" placeholder="Conductor" class="border p-2 rounded w-1/2"><input list="members-list" value="${p.roving?.name||''}" onchange="mwChristian[${i}].roving={name:this.value}" placeholder="Roving" class="border p-2 rounded w-1/2"></div>
+            </div>`).join('');
+
+            // Field Service
+            document.getElementById('fs-container').innerHTML = fsActivities.map((a,i) => `<div class="bg-orange-50 p-3 rounded border border-orange-200">
+                <div class="flex justify-between font-bold text-sm mb-2 text-orange-900"><span>Activity ${i+1}</span> <i class="material-icons text-red-500 cursor-pointer" onclick="fsActivities.splice(${i},1);renderArrays()">delete</i></div>
+                <div class="flex gap-2 mb-2"><input type="date" value="${a.date}" onchange="fsActivities[${i}].date=this.value" class="border p-2 rounded w-1/2"><input type="time" value="${a.time}" onchange="fsActivities[${i}].time=this.value" class="border p-2 rounded w-1/2"></div>
+                <select class="w-full border p-2 rounded mb-2 bg-white" onchange="fsActivities[${i}].model=this.value">
+                    ${models.map(m => `<option value="${m}" ${a.model===m?'selected':''}>${m}</option>`).join('')}
+                </select>
+                <div class="flex gap-4 mb-2 text-sm"><label><input type="radio" name="mode_${i}" value="direct" ${a.mode!=='zoom'?'checked':''} onchange="fsActivities[${i}].mode='direct'"> Direct</label><label><input type="radio" name="mode_${i}" value="zoom" ${a.mode==='zoom'?'checked':''} onchange="fsActivities[${i}].mode='zoom'"> Zoom</label></div>
+                <input type="text" value="${a.placeOrLink}" onchange="fsActivities[${i}].placeOrLink=this.value" placeholder="Location or Zoom Link" class="w-full border p-2 rounded">
+            </div>`).join('');
+
+            // Studies
+            const renderST = (arr, type) => arr.map((s,i) => `<div class="bg-white p-3 rounded border">
+                <div class="flex justify-between text-sm mb-2"><b>Entry ${i+1}</b> <i class="material-icons text-red-500 cursor-pointer" onclick="st${type}.splice(${i},1);renderArrays()">delete</i></div>
+                <input list="members-list" value="${s.publisher?.name||''}" onchange="st${type}[${i}].publisher={name:this.value}" placeholder="Publisher" class="w-full border p-2 rounded mb-2">
+                <div class="flex gap-2"><input type="date" value="${s.date}" onchange="st${type}[${i}].date=this.value" class="border p-2 rounded w-1/2"><input type="time" value="${s.time}" onchange="st${type}[${i}].time=this.value" class="border p-2 rounded w-1/2"></div>
+            </div>`).join('');
+            
+            document.getElementById('br-container').innerHTML = renderST(stBrother, 'Brother');
+            document.getElementById('sr-container').innerHTML = renderST(stSister, 'Sister');
+        };
+
+        window.addMWPart = () => { mwMinistry.push({title:'',time:'',description:'',descriptionLink:'',counselPoint:'',counselPointLink:'',participant1:{name:''},participant2:{name:''}}); renderArrays(); };
+        window.addChrisPart = () => { mwChristian.push({title:'',time:'',conductor:{name:''},roving:{name:''}}); renderArrays(); };
+        window.addFS = () => { fsActivities.push({id:crypto.randomUUID(), date:'', time:'09:00', model:'House to House', mode:'direct', placeOrLink:''}); renderArrays(); };
+        window.addStudy = (t) => { (t==='br'?stBrother:stSister).push({id:crypto.randomUUID(), publisher:{name:''}, date:'', time:''}); renderArrays(); };
+
+        // --- Helpers ---
+        const setV = (id, v) => document.getElementById(id).value = v || '';
+        const getV = (id) => document.getElementById(id).value;
+        const getLP = (name) => ({ id: membersMap[name] || "", name: name || "" });
+
+        // --- Save Data ---
+        window.saveData = async () => {
+            const coName = getV('ov-coName'); document.getElementById('header-title').innerText = coName;
+            const fullData = {
+                coName: coName, weekStartDate: getV('ov-startDate'), weekEndDate: getV('ov-endDate'),
+                midweek: {
+                    date: getV('mwDate'), scriptures: getV('mwScriptures'), chairman: getLP(getV('mwChairman')),
+                    openingSong: getV('mwOpeningSong'), openingSongTitle: getV('mwOpeningSongTitle'), openingSongScripture: getV('mwOpeningSongScripture'), openingPrayer: getLP(getV('mwOpeningPrayer')),
+                    talkTitle: getV('mwTalkTitle'), talkSpeaker: getLP(getV('mwTalkSpeaker')), gemsConductor: getLP(getV('mwGemsConductor')), gemsRoving: getLP(getV('mwGemsRoving')),
+                    bibleReadingScriptures: getV('mwBibleReadingScriptures'), bibleReadingScripturesLink: getV('mwBibleReadingScripturesLink'), bibleReader: getLP(getV('mwBibleReader')),
+                    bibleReadingCounselPoint: getV('mwBibleReadingCounselPoint'), bibleReadingCounselPointLink: getV('mwBibleReadingCounselPointLink'),
+                    ministryParts: mwMinistry.map(p => ({...p, participant1: getLP(p.participant1.name), participant2: getLP(p.participant2.name)})),
+                    middleSong: getV('mwMiddleSong'), middleSongTitle: getV('mwMiddleSongTitle'), middleSongScripture: getV('mwMiddleSongScripture'),
+                    christianParts: mwChristian.map(p => ({...p, conductor: getLP(p.conductor.name), roving: getLP(p.roving.name)})),
+                    coServiceTalkTitle: getV('mwCoServiceTalkTitle'),
+                    closingSong: getV('mwClosingSong'), closingSongTitle: getV('mwClosingSongTitle'), closingSongScripture: getV('mwClosingSongScripture'), closingPrayer: getLP(getV('mwClosingPrayer'))
+                },
+                weekend: {
+                    date: getV('weDate'), chairman: getLP(getV('weChairman')), speakerName: getLP(getV('weSpeakerName')),
+                    talkTitle: getV('weTalkTitle'), talkNumber: getV('weTalkNumber'), talkNumberLink: getV('weTalkNumberLink'), coConcludingTalk: getV('weCoConcludingTalk')
+                },
+                fieldService: fsActivities.map(a => ({...a, conductedBy: {id:"", name: coName}})),
+                coActivities: {
+                    studiesBrother: stBrother.map(s => ({...s, publisher: getLP(s.publisher.name)})),
+                    studiesSister: stSister.map(s => ({...s, publisher: getLP(s.publisher.name)})),
+                    pioneeringMeetingDate: getV('om-pio-date'), pioneeringMeetingTime: getV('om-pio-time'),
+                    eldersMsMeetingDate: getV('om-eld-date'), eldersMsMeetingTime: getV('om-eld-time')
+                }
+            };
+            
+            try {
+                await setDoc(doc(db, "covisit_schedules", docId), fullData, {merge: true});
+                dbData = { ...dbData, ...fullData };
+                updateOverviewLabels();
+                if(currentSection !== 'overview') openSection('overview');
+            } catch(e) { alert("Save Error: " + e.message); }
+        };
+
+        // --- Publish & Delete ---
+        window.publishVisit = async () => {
+            await saveData(); // Always save current inputs first
+            const btn = document.getElementById('publish-btn');
+            btn.innerText = "Publishing..."; btn.disabled = true;
+
+            try {
+                await runTransaction(db, async (trans) => {
+                    const idxRef = doc(db, "metadata", "releases_index");
+                    const idxSnap = await trans.get(idxRef);
+                    let allRel = idxSnap.exists() ? idxSnap.data().all_releases || [] : [];
+                    
+                    if(dbData.status !== "published" || !dbData.releaseId){
+                        const newRelId = crypto.randomUUID();
+                        const relData = { id: newRelId, title: "CO Visit Schedule", coName: dbData.coName, weekStartDate: dbData.weekStartDate, weekEndDate: dbData.weekEndDate, publishedAt: Date.now(), version: 1, type: "covisit" };
+                        trans.set(idxRef, { all_releases: [relData, ...allRel] }, {merge: true});
+                        trans.update(doc(db, "covisit_schedules", docId), { status: "published", releaseId: newRelId });
+                        dbData.releaseId = newRelId;
+                    } else {
+                        allRel = allRel.map(r => r.id === dbData.releaseId ? { ...r, version: (r.version||1)+1, publishedAt: Date.now(), coName: dbData.coName, weekStartDate: dbData.weekStartDate, weekEndDate: dbData.weekEndDate } : r);
+                        trans.update(idxRef, { all_releases: allRel });
+                    }
+                });
+                
+                dbData.status = "published";
+                btn.innerText = "Push Update to Users";
+                btn.classList.replace('bg-purple-600', 'bg-green-600');
+                btn.disabled = false;
+                
+                const title = encodeURIComponent(dbData.status==="published" ? "CO Visit Updated" : "CO Visit Schedule");
+                const body = encodeURIComponent(dbData.status==="published" ? "Changes have been made." : `Schedule for ${dbData.coName} is available.`);
+                fetch(`https://us-central1-schedy-congegation.cloudfunctions.net/sendScheduleNotification?key=schedy_admin_secure_9922&title=${title}&body=${body}`);
+                
+                alert("Published Successfully!");
+            } catch(e) { alert("Publish Error: " + e.message); btn.disabled = false; }
+        };
+
+        window.deleteVisit = async () => {
+            if(!confirm("Are you sure you want to delete this ENTIRE CO Visit? This cannot be undone.")) return;
+            try {
+                if(dbData.status === "published" && dbData.releaseId){
+                    await runTransaction(db, async (trans) => {
+                        const idxRef = doc(db, "metadata", "releases_index");
+                        const idxSnap = await trans.get(idxRef);
+                        if(idxSnap.exists()) trans.update(idxRef, { all_releases: (idxSnap.data().all_releases || []).filter(r => r.id !== dbData.releaseId) });
+                    });
+                }
+                await deleteDoc(doc(db, "covisit_schedules", docId));
+                window.location.href = 'covisit.html';
+            } catch(e) { alert("Delete Error: " + e.message); }
+        };
+
+        init();
+    </script>
+</body>
+</html>
