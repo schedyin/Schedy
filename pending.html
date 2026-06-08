@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pending Users</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        premium: {
+                            900: '#002726',
+                            800: '#032E2E',
+                            600: '#0A5C5C',
+                            50: '#F0F5F5'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"IBM Plex Sans"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'IBM Plex Sans', sans-serif; background-color: #FAFAFA; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        
+        .modal-enter { animation: fade-in 0.2s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        @keyframes fade-in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen pb-24 flex flex-col">
+
+    <header class="bg-premium-900 text-white shadow-md p-4 flex items-center sticky top-0 z-20">
+        <button onclick="window.location.href='dashboard.html'" class="mr-4 hover:bg-white/10 p-1 rounded-full transition-colors"><i class="material-icons">arrow_back</i></button>
+        <h1 class="text-xl font-semibold flex-1">Pending Users</h1>
+    </header>
+
+    <main class="max-w-3xl mx-auto w-full p-4 relative flex-1" id="main-content">
+        
+        <div id="loading-state" class="flex justify-center mt-12">
+            <div class="animate-spin rounded-2xl h-8 w-8 border-b-2 border-premium-800"></div>
+        </div>
+
+        <div id="empty-state" class="hidden text-center mt-16">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                <i class="material-icons text-gray-400 text-3xl">check_circle_outline</i>
+            </div>
+            <h2 class="text-lg font-bold text-gray-800">No pending users</h2>
+            <p class="text-gray-500 mt-1">All user accounts have been processed.</p>
+        </div>
+
+        <div id="users-container" class="space-y-4 hidden"></div>
+    </main>
+
+    <div id="dialog-link" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-6 w-[400px] max-w-[90%] shadow-xl modal-enter flex flex-col max-h-[80vh]">
+            <h2 class="text-xl font-bold mb-1 text-premium-900">Link to Existing Member</h2>
+            <p class="text-sm text-gray-500 mb-4">Select a congregation member to link this Google account to.</p>
+            
+            <div id="members-loading" class="flex justify-center py-8">
+                <div class="animate-spin rounded-2xl h-6 w-6 border-b-2 border-premium-800"></div>
+            </div>
+
+            <div id="members-list" class="overflow-y-auto flex-1 mb-4 space-y-1 pr-2 hidden">
+                </div>
+
+            <div class="flex justify-end pt-4 border-t border-gray-100">
+                <button onclick="closeDialog()" class="px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium transition-colors w-full">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, query, where, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDq-NkomNItBZorK7GQqvcFwSvFB5oHMaA",
+            authDomain: "schedy-congegation.firebaseapp.com",
+            projectId: "schedy-congegation",
+            storageBucket: "schedy-congegation.firebasestorage.app",
+            messagingSenderId: "642904120818",
+            appId: "1:642904120818:web:6a1cd7c2cd0dc460d41f6b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let pendingUsers = [];
+        let existingMembers = [];
+        let userToLink = null;
+        let isLinking = false;
+
+        async function init() {
+            try {
+                const q = query(collection(db, "users"), where("status", "==", "pending"));
+                const snapshot = await getDocs(q);
+                pendingUsers = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    name: doc.data().name || "Unknown",
+                    email: doc.data().email || ""
+                }));
+
+                document.getElementById('loading-state').classList.add('hidden');
+                renderUsers();
+            } catch (e) {
+                alert("Error loading pending users: " + e.message);
+                document.getElementById('loading-state').classList.add('hidden');
+            }
+        }
+
+        function renderUsers() {
+            const container = document.getElementById('users-container');
+            const emptyState = document.getElementById('empty-state');
+            container.innerHTML = "";
+
+            if (pendingUsers.length === 0) {
+                emptyState.classList.remove('hidden');
+                container.classList.add('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.classList.remove('hidden');
+
+            pendingUsers.forEach(user => {
+                container.innerHTML += `
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                        <div class="mb-4 sm:mb-0">
+                            <h3 class="text-[17px] font-bold text-gray-900">${user.name}</h3>
+                            <p class="text-sm text-gray-500">${user.email}</p>
+                        </div>
+                        <div class="flex flex-row space-x-3 justify-end">
+                            <button onclick="openLinkDialog('${user.id}')" class="flex-1 sm:flex-none px-4 py-2 border border-premium-200 text-premium-800 rounded-2xl font-medium hover:bg-premium-50 transition-colors flex items-center justify-center text-sm">
+                                <i class="material-icons text-[18px] mr-1.5">person</i> Link
+                            </button>
+                            <button onclick="addAsNew('${user.id}', '${encodeURIComponent(user.name)}', '${encodeURIComponent(user.email)}')" class="flex-1 sm:flex-none px-4 py-2 bg-premium-800 text-white rounded-2xl font-medium hover:bg-premium-900 transition-colors flex items-center justify-center text-sm">
+                                <i class="material-icons text-[18px] mr-1.5">add</i> Add New
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.openLinkDialog = async (userId) => {
+            userToLink = pendingUsers.find(u => u.id === userId);
+            const dialog = document.getElementById('dialog-link');
+            const membersList = document.getElementById('members-list');
+            const loading = document.getElementById('members-loading');
+            
+            dialog.classList.remove('hidden');
+            dialog.classList.add('flex');
+            membersList.classList.add('hidden');
+            loading.classList.remove('hidden');
+
+            try {
+                if (existingMembers.length === 0) {
+                    const membersSnap = await getDocs(collection(db, "members"));
+                    existingMembers = membersSnap.docs.map(d => ({
+                        id: d.id,
+                        name: d.data().name || "Unnamed"
+                    })).sort((a, b) => a.name.localeCompare(b.name));
+                }
+
+                membersList.innerHTML = "";
+                existingMembers.forEach(member => {
+                    membersList.innerHTML += `
+                        <button onclick="confirmLink('${member.id}')" class="w-full text-left p-3 hover:bg-gray-50 rounded-2xl transition-colors border border-transparent hover:border-gray-200 flex items-center justify-between group">
+                            <span class="font-medium text-gray-800">${member.name}</span>
+                            <i class="material-icons text-gray-300 group-hover:text-premium-600 transition-colors">link</i>
+                        </button>
+                    `;
+                });
+
+                loading.classList.add('hidden');
+                membersList.classList.remove('hidden');
+
+            } catch (e) {
+                alert("Error loading members.");
+                closeDialog();
+            }
+        };
+
+        window.closeDialog = () => {
+            document.getElementById('dialog-link').classList.add('hidden');
+            document.getElementById('dialog-link').classList.remove('flex');
+            userToLink = null;
+        };
+
+        window.confirmLink = async (memberId) => {
+            if (isLinking || !userToLink) return;
+            isLinking = true;
+
+            try {
+                // 1. Update User Document (Status & arrayUnion)
+                await updateDoc(doc(db, "users", userToLink.id), {
+                    status: "approved",
+                    linkedMemberIds: arrayUnion(memberId)
+                });
+
+                // 2. Update Member Document (Link to User ID)
+                await updateDoc(doc(db, "members", memberId), {
+                    linkedUserId: userToLink.id
+                });
+
+                // Remove from local array and re-render
+                pendingUsers = pendingUsers.filter(u => u.id !== userToLink.id);
+                renderUsers();
+                closeDialog();
+                
+            } catch (e) {
+                alert("Failed to link account: " + e.message);
+            } finally {
+                isLinking = false;
+            }
+        };
+
+        window.addAsNew = (uid, encodedName, encodedEmail) => {
+            // Redirects to members.html passing parameters to trigger the "New Member" form automatically
+            window.location.href = `members.html?pendingUserId=${uid}&pendingName=${encodedName}&pendingEmail=${encodedEmail}`;
+        };
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>
